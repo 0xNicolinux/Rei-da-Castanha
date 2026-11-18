@@ -26,12 +26,6 @@ const storyScenes = [
     description: "Guitarra ligada, amplificador no máximo e cada acorde como um trovão.",
   },
   {
-    image: "assets/historia-04-show.jpg",
-    alt: "O Rei da Castanha toca para os animais no palco da floresta",
-    title: "O show vai começar",
-    description: "A floresta inteira acompanha o som enquanto o esquilo faz seu grande show.",
-  },
-  {
     image: "assets/historia-01-entrega.jpg",
     alt: "Uma carreta carregada de castanhas chega à festa na floresta",
     title: "A carreta salvadora",
