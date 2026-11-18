@@ -12,3 +12,6 @@ Mercado: moedas são folhas, brilhos e pedras.
 Câmbio: 1 brilho = 6 folhas, 1 pedra = 15 folhas.
 Para mudar preços e produtos, edite a lista PRODUTOS no topo de loja.js (v = valor em folhas).
 A bolsa fica salva no navegador (localStorage).
+
+- Carrossel da história: seção “A saga em imagens”, entre o player e o mercado.
+- As seis cenas ficam em assets/historia-*.jpg; navegue pelas setas ou pelos pontos.
