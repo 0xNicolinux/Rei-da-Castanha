@@ -5,6 +5,7 @@
 (function () {
   'use strict';
   const RC = window.RC, EV = RC.events;
+  const CW = 20, CH = 40, CS = 1.25;        // caixote: corpo 40x40, sprite 36 texels a 1.25x (corpo = hitbox)
   let props = [], lanterns = [], prev = { vy: 0, g: false }, stageT = 0;
 
   const G = () => RC.game.G;
@@ -24,14 +25,14 @@
     api.sfx('land', 0.34, 0.8); api.sfx('item', 0.2, 0.7);
     const n = c.golden ? 3 : 3;
     for (let i = 0; i < n; i++) {
-      g.nuts.push({ x: c.x + (i - 1) * 16, y: c.y - 30, golden: c.golden && i === 1, taken: false, ph: i, mag: false, vy: -300 - i * 40, drop: true });
+      g.nuts.push({ x: c.x + (i - 1) * 16, y: c.y - CH - 6, golden: c.golden && i === 1, taken: false, ph: i, mag: false, vy: -300 - i * 40, drop: true });
     }
     if (how === 'stomp') { const p = api.player; p.vy = -420; p.jumping = false; p.sx = 0.85; p.sy = 1.2; }
   }
 
   // onda da Pancada do Rei quebra caixotes por perto
   EV.on('pound', (x, y) => {
-    for (const c of props) if (c.type === 'crate' && !c.broken && Math.abs(c.x - x) < 120 && Math.abs(c.y - y) < 40) breakCrate(c, 'punch');
+    for (const c of props) if (c.type === 'crate' && !c.broken && Math.abs(c.x - x) < 120 && Math.abs(c.y - y) < 46) breakCrate(c, 'punch');
   });
 
   EV.on('update', (dt) => {
@@ -54,18 +55,20 @@
           api.sfx('jump', 0.4, 1.5);
         }
       } else if (s.type === 'crate') {
-        const top = s.y - 30;
-        // pisão
-        if (p.vy > 60 && p.x + p.w > s.x - 17 && p.x < s.x + 17 && bottom >= top && bottom <= top + 18 && p.y + p.h - p.vy * dt <= top + 8) { breakCrate(s, 'stomp'); continue; }
+        const top = s.y - CH;
+        // pisão forte (queda rápida) quebra; pouso suave apenas fica em cima (o caixote é sólido)
+        if ((p.vy > 330 || (p.grounded && !prev.g && prev.vy > 330)) && p.x + p.w > s.x - CW && p.x < s.x + CW && bottom >= top - 2 && bottom <= top + 18) { breakCrate(s, 'stomp'); continue; }
         // soco
         if (p.atk > 0 && s.hitId !== p.atkId) {
           const f = p.facing, hx = f > 0 ? p.x + p.w - 8 : p.x - 50, hy = p.y - 10, hh = p.h + 18;
-          if (hx < s.x + 17 && hx + 58 > s.x - 17 && hy < s.y && hy + hh > top) { s.hitId = p.atkId; breakCrate(s, 'punch'); }
+          if (hx < s.x + CW && hx + 58 > s.x - CW && hy < s.y && hy + hh > top) { s.hitId = p.atkId; breakCrate(s, 'punch'); }
         }
       }
     }
     prev.vy = p.vy; prev.g = p.grounded;
   });
+
+  RC.props = { CW, CH, solids: () => props.filter((c) => c.type === 'crate' && !c.broken).map((c) => ({ x0: c.x - CW, x1: c.x + CW, top: c.y - CH, bottom: c.y })) };
 
   function box(x, y, w, h, col) {
     const R = RC.game.R, r = rect('dot');
@@ -78,6 +81,7 @@
     if (api.G.state === 'title') return;                    // tela inicial limpa atrás do título
     for (const s of props) {
       if (s.x < cam - 60 || s.x > cam + 1020) continue;
+      { const gr = rect('glow'); if (gr && !s.broken) api.R.sprite(api.atlas.set, gr, s.x - 26, s.y - 4, 52 / gr.w, 9 / gr.h, { col: [0, 0, 0, 0.38], lit: 0, noSnap: true }); }   // sombra de contato
       if (s.type === 'spring') {
         const r = rect('mush_2'); if (!r) continue;
         const sq = Math.sin(s.squash * Math.PI) * s.squash;
@@ -86,7 +90,7 @@
       } else if (s.type === 'crate' && !s.broken) {
         const r = rect('crate');
         const sh = s.shake > 0 ? Math.sin(s.shake * 60) * 2 : 0;
-        if (r) { api.spr('crate', s.x - r.w * S / 2 + sh, s.y - r.h * S, S, S); continue; }
+        if (r) { api.spr('crate', s.x - 18 * CS + sh, s.y - 34 * CS, CS, CS); continue; }
         const x = s.x - 17 + sh, y = s.y - 30;
         box(x, y, 34, 30, [0.36, 0.2, 0.09, 1]);
         box(x + 2, y + 2, 30, 26, [0.7, 0.46, 0.22, 1]);

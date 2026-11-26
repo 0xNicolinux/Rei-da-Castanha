@@ -36,6 +36,7 @@ void main(){
   const FS_SPRITE = GLSL_COMMON + `
 in vec2 vUV; in vec4 vCol; in vec4 vMisc; in vec2 vWorld;
 uniform sampler2D uAlbedo; uniform sampler2D uNormal;
+uniform float uRim;
 uniform vec3 uAmbient; uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uFog;
 uniform int uNL; uniform vec4 uLP[8]; uniform vec3 uLC[8];
 out vec4 o;
@@ -65,6 +66,7 @@ void main(){
   }
   vec3 c = alb * mix(vec3(1.0), lit, vMisc.y);
   c += alb * vMisc.x;
+  c += uSunCol * pow(clamp(1.0 - n.z, 0.0, 1.0), 1.6) * uRim * (0.4 + 0.6 * a.a) * vMisc.y;   // luz de contorno do sol nos atores
   c = mix(c, uFog, vMisc.w);
   o = vec4(c, a.a * vCol.a);
 }`;
@@ -401,6 +403,8 @@ void main(){
     let camX = 0, camY = 0, time = 0;
     let viewBound = false;
 
+    let curRim = 0;
+    function setRim(v) { if (v === curRim) return; flush(); curRim = v; }
     function setBlend(mode) {
       if (mode === curBlend) return;
       flush(); curBlend = mode; applyBlend();
@@ -436,6 +440,7 @@ void main(){
     function flush() {
       if (!vcount || !curSet) { vcount = 0; return; }
       useSprite();
+      gl.uniform1f(P.sprite.u.uRim, curRim);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, curSet.a.tex);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, curSet.n.tex);
       gl.bindVertexArray(vao);
@@ -609,7 +614,7 @@ void main(){
 
     return {
       gl, hdr, canvas, WW, WH, resize, makeTex, texSet, freeSet,
-      env, lights, setBlend, quad, sprite, flush, begin, drawSky, drawLayer, drawMotes, drawMist, post,
+      env, lights, setBlend, setRim, quad, sprite, flush, begin, drawSky, drawLayer, drawMotes, drawMist, post,
       get height() { return VH; }
     };
   };

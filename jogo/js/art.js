@@ -238,6 +238,20 @@
     return fromAscii(rows, { K: '#241018', C: cap, S: spot, W: '#e8d8b8' });
   }
 
+  /* broto/samambaia pequena (substitui os gravetos-palmeira): 13x12 texels */
+  function makeSprout(i) {
+    const c = cv(13, 12), g = c.getContext('2d'), D = '#1d3a1f', M = '#3f8f3a', L = '#86d65c';
+    const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
+    const h = 7 + (i % 3) * 2, lean = [0, 1, -1][i % 3];
+    for (let j = 0; j < h; j++) px(6 + Math.round(lean * j / h * 2), 11 - j, M);
+    for (let k = 1; k < h - 1; k += 2) {
+      const sx = 6 + Math.round(lean * k / h * 2), y = 11 - k, len = Math.max(1, 3 - Math.floor(k / 3));
+      for (let n = 1; n <= len; n++) { px(sx - n, y - (n > 1 ? 1 : 0), n === len ? L : M); px(sx + n, y - (n > 1 ? 1 : 0), n === len ? L : M); }
+    }
+    px(6 + Math.round(lean), 11 - h, L); px(6 + Math.round(lean), 12 - h, M);
+    px(6, 11, D);
+    return c;
+  }
   function makeLeaf(col, dark) {
     const rows = ['..KK...', '.KCCK..', 'KCCDCK.', '.KCCCCK', '..KKKK.'];
     return fromAscii(rows, { K: dark, C: col, D: dark });
@@ -871,6 +885,20 @@
     }
     return outline(T.c, '#2a160a');
   }
+  function bakeOutline(c) {
+    const w = c.width, h = c.height, g = c.getContext('2d'), id = g.getImageData(0, 0, w, h), d = id.data, src = new Uint8ClampedArray(d);
+    const op = (i, j) => (i >= 0 && j >= 0 && i < w && j < h && src[(j * w + i) * 4 + 3] > 150) ? (j * w + i) * 4 : -1;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const k = (j * w + i) * 4; if (src[k + 3] > 40) continue;
+      let dark = false, any = false;
+      for (const [a, b] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]) {
+        const q = op(a, b); if (q < 0) continue; any = true;
+        if (src[q] * 0.3 + src[q + 1] * 0.59 + src[q + 2] * 0.11 < 55) dark = true;
+      }
+      if (any && !dark) { d[k] = 22; d[k + 1] = 10; d[k + 2] = 18; d[k + 3] = 235; }
+    }
+    g.putImageData(id, 0, 0);
+  }
   function makePaperLantern(f) {
     const T = toolkit(24, 38), sw = [0, 1, 0][f], R = ramp('#e8383a');
     T.line(12, 0, 12 + sw, 5, '#3a2a18');
@@ -925,60 +953,26 @@
     const hex = (k) => '#' + k.toString(16).padStart(6, '0');
     return top.map(hex);
   }
-  function makeGlideFrames(run) {
-    const out = '#2a1008', dk = '#8a3a12', md = '#b8561a', lt = '#dc7626', hi = '#f4a455';
-    const frames = [];
-    const P = [{ ang: 0.72, rx: 16, ry: 12, arm: 0, leg: 0 }, { ang: 0.92, rx: 15, ry: 13, arm: -1, leg: 1 }, { ang: 0.8, rx: 15.5, ry: 12.4, arm: 1, leg: -1 }, { ang: 0.62, rx: 16.5, ry: 11.5, arm: 0, leg: 1 }];
-    P.forEach((q, fi) => {
-      const c = cv(90, 58), g = c.getContext('2d');
-      // cauda: leque felpudo em arco (de pára-quedas) saindo do quadril
-      const ca = Math.cos(q.ang), sa = Math.sin(q.ang), cx = 38 - q.rx * ca, cy = 34 - q.rx * sa;
-      const img = g.createImageData(90, 58);
-      for (let y = 0; y < 58; y++) for (let x = 0; x < 90; x++) {
-        const dx = x - cx, dy = y - cy;
-        const u = (dx * ca + dy * sa) / q.rx, v = (-dx * sa + dy * ca) / q.ry;
-        // formato de folha: afunila na raiz (u>0 = lado do corpo)
-        const w = 1 - Math.max(0, u) * 0.6;
-        const r = Math.sqrt(u * u + (v / Math.max(0.35, w)) * (v / Math.max(0.35, w)));
-        if (r > 1) continue;
-        let col = md;
-        if (r > 0.86) col = out; else if (r > 0.7) col = dk;
-        else {
-          const band = Math.floor((u + 1) * 5.5 + Math.sin(v * 2.2 + fi) * 0.6);
-          if (v < -0.25 && r < 0.6) col = lt;
-          if (band % 3 === 0 && r < 0.64) col = dk;
-          if (v < -0.55 && r < 0.62 && band % 3 !== 0) col = hi;
-        }
-        const k = (y * 90 + x) * 4, rgb = parseInt(col.slice(1), 16);
-        img.data[k] = rgb >> 16; img.data[k + 1] = (rgb >> 8) & 255; img.data[k + 2] = rgb & 255; img.data[k + 3] = 255;
-      }
-      g.putImageData(img, 0, 0);
-      // corpo e cabeça do quadro de corrida (sem a cauda original)
-      g.drawImage(run, 38, 0, 52, 58, 38, 0, 52, 58);
-      // membros abertos: braço à frente/cima e perna esticada atrás
-      const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
-      const limb = (x0, y0, dxn, dyn, len, col) => { for (let i = 0; i < len; i++) { px(x0 + i * dxn, y0 + Math.round(i * dyn), out); px(x0 + i * dxn, y0 + Math.round(i * dyn) + 1, col); } };
-      limb(57, 44 + q.arm, 1, 0.1, 6, md);
-      limb(51, 45, 1, 0.05, 5, dk);
-      limb(46, 44 + q.leg, -1, 0.35, 7, md);
-      limb(49, 45, -1, 0.15, 5, dk);
-      frames.push(c);
+  /* planar: o esquilo do quadro "idle" girado para deitar de barriga para baixo; a cauda felpuda fica arqueada
+     para cima como um pára-quedas, ainda presa ao corpo. 4 quadros com giro, esticada de membros e bater de cauda. */
+  function makeGlideFrames(idle) {
+    const w = idle.width, h = idle.height, d = idle.getContext('2d').getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 40) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const pcx = (x0 + x1) / 2, pcy = (y0 + y1) / 2, hx = 43, hy = 23;       // pivô e âncora da cabeça no quadro idle
+    const P = [{ a: 1.12, sx: 1.12, sy: 0.96, dy: 0 }, { a: 1.26, sx: 1.2, sy: 0.9, dy: -1 }, { a: 1.38, sx: 1.08, sy: 1.0, dy: 0 }, { a: 1.24, sx: 1.16, sy: 0.93, dy: 1 }];
+    RC.GLIDE_ANCHORS = [];
+    return P.map((q) => {
+      const c = cv(90, 58), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+      const ox = 42, oy = 30 + q.dy;
+      g.save(); g.translate(ox, oy); g.rotate(q.a); g.scale(q.sy, q.sx);   // achata no eixo do corpo, alonga o leque
+      g.drawImage(idle, -pcx, -pcy); g.restore();
+      const rx = (hx - pcx) * q.sy, ry = (hy - pcy) * q.sx, ca = Math.cos(q.a), sa = Math.sin(q.a);
+      RC.GLIDE_ANCHORS.push([Math.round(ox + rx * ca - ry * sa), Math.round(oy + rx * sa + ry * ca), 0, 'head']);
+      return c;
     });
-    return frames;
   }
-  function makePoundFrame(ball) {
-    const c = cv(90, 84), g = c.getContext('2d');
-    // rastros de velocidade acima da bola
-    for (let i = 0; i < 7; i++) {
-      const x = 22 + i * 7 + (i % 2) * 2, len = 12 + (i % 3) * 7;
-      for (let y = 0; y < len; y++) {
-        const a = 0.18 + 0.55 * (1 - y / len);
-        g.fillStyle = `rgba(255,${226 - y * 2},150,${a})`; g.fillRect(x, 26 - len + y + (i % 2) * 3, 2, 1);
-      }
-    }
-    g.drawImage(ball, 0, 26);
-    return c;
-  }
+  function makePoundFrame(ball) { const c = cv(ball.width, ball.height); c.getContext('2d').drawImage(ball, 0, 0); return c; }
   RC.makeGlideFrames = makeGlideFrames; RC.makePoundFrame = makePoundFrame;
 
   function loadImg(src) {
@@ -1007,7 +1001,7 @@
     addNewSprites(add);
     {
       const toC = (im) => { const c = cv(im.width, im.height); c.getContext('2d').drawImage(im, 0, 0); return c; };
-      const run4 = defs.find((d) => d.name === 'run_4'), jmp = defs.find((d) => d.name === 'jump_3');
+      const run4 = defs.find((d) => d.name === 'idle_1'), jmp = defs.find((d) => d.name === 'jump_3');
       if (run4) makeGlideFrames(toC(run4.src)).forEach((c, i) => add('glide_' + (i + 1), c));
       if (jmp) add('pound_1', makePoundFrame(toC(jmp.src)));
     }
@@ -1022,8 +1016,15 @@
     add('flower_0', makeFlower(rnd, '#fff3d0', '#f0b030')); add('flower_1', makeFlower(rnd, '#ff8aa8', '#ffe27a'));
     add('flower_2', makeFlower(rnd, '#8ab8ff', '#fff3d0')); add('flower_3', makeFlower(rnd, '#ffcf4a', '#a8541c'));
     add('mush_0', makeMushroom('#e04545', '#fff1d6')); add('mush_1', makeMushroom('#38d6c4', '#e8fffb')); add('mush_2', makeMushroom('#b070ff', '#f6e8ff'));
+    for (let i = 0; i < 3; i++) add('sprout_' + i, makeSprout(i));
     add('leaf_0', makeLeaf('#6bb348', '#1a3a28')); add('leaf_1', makeLeaf('#e0a032', '#5a2c10')); add('leaf_2', makeLeaf('#d9552f', '#4a1608'));
 
+    // contorno escuro de 1 texel nos sprites de jogo (separação do plano de ação); pula quem já tem borda escura
+    for (const d of defs) {
+      if (!/^(ant_|gator_|hopidle|hopjump|hopfall|death_|idle_|run_|jump_|crouch_|hurt_|acorn_|npc_|glide_|pound_|crate|spring|wasp_|beetle_|toad_|boss_|item_)/.test(d.name)) continue;
+      if (!(d.src instanceof HTMLCanvasElement)) { const c = cv(d.src.width, d.src.height); c.getContext('2d').drawImage(d.src, 0, 0); d.src = c; }
+      bakeOutline(d.src);
+    }
     // empacotamento (prateleiras) — albedo e normal com o mesmo layout
     const pack = (size) => {
       let cx = 1, cy = 1, rowH = 0;

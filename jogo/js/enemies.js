@@ -340,7 +340,7 @@
   function updateBar() {
     if (!bar) return;
     const show = boss && !boss.dead && boss.st !== 'sleep' && (G.state === 'playing' || G.state === 'paused');
-    bar.style.display = show ? 'block' : 'none';
+    bar.style.display = show ? 'block' : 'none'; document.body.classList.toggle('boss-on', !!show);
     if (show) barFill.style.width = clamp(boss.hp / BOSS_HP, 0, 1) * 100 + '%';
   }
 
@@ -596,7 +596,8 @@
     }
   });
   EV.on('update', (dt) => {
-    for (const e of G.enemies) { const d = e.def; if (d && d.tick) d.tick(e, dt); }
+    // corpos de tipos sem tick (vespa, sapo) também precisam cair/quicar; antes ficavam congelados onde morreram
+    for (const e of G.enemies) { const d = e.def; if (d && d.tick) d.tick(e, dt); else if (e.dead && e.dd) stepBody(e, dt); }
     updateProj(dt);
     updateBar();
   });

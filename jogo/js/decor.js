@@ -18,7 +18,8 @@
     keepOut.push([lv.start.x + 250, lv.start.x + 350], [lv.goal.x - 60, lv.goal.x + 260], [lv.start.x - 40, lv.start.x + 40]);
     const blocked = (x) => keepOut.some((k) => x > k[0] && x < k[1]);
     const crowded = (x, z, r) => taken.some((t) => t[1] === z && Math.abs(t[0] - x) < r);
-    const add = (it, r) => { if (crowded(it.x, it.z, r || 9)) return false; taken.push([it.x, it.z]); out.push(it); return true; };
+    const nutNear = (x, y) => (lv.nuts || []).some((n) => Math.abs(n.x - x) < 24 && n.y > y - 46 && n.y < y + 4);
+    const add = (it, r) => { if (it.kind === 'twig' && nutNear(it.x, it.y)) return false; if (crowded(it.x, it.z, r || 9)) return false; taken.push([it.x, it.z]); out.push(it); return true; };
     const tuft = () => `tuft_${M}_${Math.floor(rnd() * 6)}`;
 
     // percorre trechos contínuos de chão
@@ -62,20 +63,20 @@
       }
       // gravetos ao fundo, esparsos
       for (let x = x0 + 30; x < x1 - 30; x += 90 + rnd() * 120) {
-        if (rnd() < 0.55) add({ kind: 'twig', name: `twig_${1 + Math.floor(rnd() * 2)}`, x, y: y + 4, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 }, 40);
+        if (rnd() < 0.55) add({ kind: 'twig', name: `sprout_${Math.floor(rnd() * 3)}`, x, y: y + 2, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 }, 40);
       }
     }
 
     // galhos: tufos na borda superior e gravetos, só dentro da largura do galho
     for (const p of lv.platforms) {
-      if (p.crumble) continue;
+      if (p.crumble || p.bob) continue;
       const n = Math.max(1, Math.floor(p.w / 28));
       for (let k = 0; k < n; k++) {
         if (rnd() < 0.35) continue;
         const x = p.x + 8 + rnd() * (p.w - 16);
         add({ kind: 'tuft', name: tuft(), x, y: p.y + 4, ph: rnd() * 6, z: 1 }, 12);
       }
-      if (p.w >= 64 && rnd() < 0.4) add({ kind: 'twig', name: `twig_${1 + Math.floor(rnd() * 2)}`, x: p.x + p.w * (0.25 + rnd() * 0.5), y: p.y + 6, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 }, 30);
+      if (p.w >= 64 && rnd() < 0.4) add({ kind: 'twig', name: `sprout_${Math.floor(rnd() * 3)}`, x: p.x + 15 + (p.w - 30) * rnd(), y: p.y + 3, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 }, 30);
     }
     return out;
   };

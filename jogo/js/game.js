@@ -61,6 +61,7 @@
 
   /* ---------------------------------------------------------------- utilitários de UI */
   function toast(msg, ms) {
+    if (G.state !== 'playing' && G.state !== 'finished') return;       // toasts de jogo não aparecem em menus
     ui.toast.textContent = msg; ui.toast.classList.add('show'); G.toastT = (ms || 1800) / 1000;
   }
   /* Telas com botões. Só a de cima recebe foco; o resto (e o HUD) fica inerte enquanto ela está aberta. */
@@ -152,12 +153,12 @@
       }
       if (rnd() < 0.07) d.push({ kind: 'flower', name: `flower_${Math.floor(rnd() * 4)}`, x: c * T + rnd() * T, y: y + 1, ph: rnd() * 6, z: 0 });
       if (rnd() < 0.045 && c > 8) d.push({ kind: 'mush', name: `mush_${M >= 3 ? 1 + Math.floor(rnd() * 2) : Math.floor(rnd() * 3) === 2 ? 2 : 0}`, x: c * T + rnd() * T, y: y + 2, ph: 0, z: 0, glow: M >= 3 });
-      if (rnd() < 0.09) d.push({ kind: 'twig', name: `twig_${1 + Math.floor(rnd() * 2)}`, x: c * T + 6, y: y + 4, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 });
+      if (rnd() < 0.09) d.push({ kind: 'twig', name: `sprout_${Math.floor(rnd() * 3)}`, x: c * T + 12, y: y + 2, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 });
     }
     for (const p of lv.platforms) {
       const n = Math.floor(p.w / 22);
       for (let k = 0; k < n; k++) if (rnd() < 0.6) d.push({ kind: 'tuft', name: `tuft_${M}_${Math.floor(rnd() * tuftN)}`, x: p.x + 6 + rnd() * (p.w - 12), y: p.y + 4, ph: rnd() * 6, z: 1 });
-      if (rnd() < 0.5) d.push({ kind: 'twig', name: `twig_${1 + Math.floor(rnd() * 2)}`, x: p.x + p.w * (0.2 + rnd() * 0.6), y: p.y + 6, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 });
+      if (rnd() < 0.5) d.push({ kind: 'twig', name: `sprout_${Math.floor(rnd() * 3)}`, x: p.x + 15 + (p.w - 30) * rnd(), y: p.y + 3, ph: rnd() * 6, z: 0, flip: rnd() < 0.5 ? -1 : 1 });
     }
     G.decor = RC.placeDecor ? RC.placeDecor(lv, rnd, d) : d;
     // vaga-lumes
@@ -306,6 +307,7 @@
     } else {
       let g = PH.GRAV * (player.vy > 0 ? PH.FALL_MULT : 1);
       if (Math.abs(player.vy) < 70 && jumpHeld && player.jumping) g *= 0.82;
+      if (Math.abs(player.vy) < 38 && !player.grounded && !player.pound) g *= 0.6;          // suspensão no ápice do pulo
       player.vy = Math.min(player.vy + g * dt, PH.MAXFALL);
     }
 
@@ -324,6 +326,15 @@
       else { nx = player.vx > 0 ? hit.c * T - player.w : (hit.c + 1) * T; player.vx = 0; player.x = nx; }
     } else player.x = nx;
 
+    // caixotes sólidos: empurram para fora pelos lados
+    if (RC.props) for (const b of RC.props.solids()) {
+      if (player.x + player.w > b.x0 && player.x < b.x1 && player.y + player.h > b.top + 3 && player.y < b.bottom) {
+        const over = player.y + player.h - b.top;
+        if (over <= 12 && player.vy >= -200) { player.y = b.top - player.h; if (player.vy > 0) player.vy = 0; continue; }   // correção de quina: sobe no caixote
+        if (player.x + player.w / 2 < (b.x0 + b.x1) / 2) player.x = b.x0 - player.w; else player.x = b.x1;
+        player.vx = 0;
+      }
+    }
     // eixo Y
     const prevBottom = player.y + player.h;
     player.y += player.vy * dt;
@@ -341,6 +352,9 @@
           land = p.y;
           if (p.crumble && !(p.cT > 0)) { p.cT = 0.5; sfx('land', 0.15, 0.6); burst('dust', player.x + player.w / 2, p.y, 4, 70, { col: [0.5, 0.35, 0.2], life: 0.5 }); }
         }
+      }
+      if (RC.props) for (const b of RC.props.solids()) {
+        if (player.x + player.w > b.x0 + 2 && player.x < b.x1 - 2 && prevBottom <= b.top + 6 && bottom >= b.top && (land === null || b.top < land)) land = b.top;
       }
       if (land !== null) {
         player.y = land - player.h;
@@ -467,6 +481,7 @@
       }
     }
 
+    for (let i = G.enemies.length - 1; i >= 0; i--) { const e = G.enemies[i]; if (e.dead && e.deadT > 2.4 && e.type !== 'ladrao') G.enemies.splice(i, 1); }   // corpos já invisíveis saem da lista
     for (const e of G.enemies) {
       updateEnemy(e, dt);
       if (e.dead || e.stun > 0 || player.dead) continue;
@@ -531,6 +546,7 @@
     // câmera
     const look = player.facing * 70 + clamp(player.vx * 0.16, -40, 40);
     G.camTarget = clamp(pcx - WW * 0.42 + look, 0, lv.width - WW);
+    if (G.camLock != null) G.camTarget = G.camLock;
     G.camX += (G.camTarget - G.camX) * (1 - Math.exp(-dt * 6.5));
     G.camX = clamp(G.camX, 0, lv.width - WW);
 
@@ -648,7 +664,7 @@
     for (const d of G.decor) {
       if (d.x < cam - 40 || d.x > cam + WW + 40 || d.z !== 0) continue;
       const r0 = rc[d.name];
-      if (d.kind === 'twig') spr(d.name, d.x - (d.flip < 0 ? r0.w * S : 0), d.y - r0.h * S, (d.flip || 1) * S, S, { fog: 0.05 });
+      if (d.kind === 'twig') spr(d.name, d.x + (d.flip < 0 ? 1 : -1) * r0.w * S / 2, d.y - r0.h * S, (d.flip || 1) * S, S, { fog: 0.05, shear: Math.sin(t * 1.9 + d.ph + d.x * 0.013) * 2.2 });
       else if (d.kind === 'mush') spr(d.name, d.x, d.y - r0.h * S, S, S, { emit: d.glow ? 0.9 : 0.05 });
       else if (d.kind === 'flower') spr(d.name, d.x, d.y - r0.h * S, S, S, { shear: Math.sin(t * 1.4 + d.ph) * 2 });
     }
@@ -711,11 +727,17 @@
       else { name = 'hopidle_' + (1 + (Math.floor(e.anim * 5) % 4)); ax = 25; ay = 32; }
       const dim = e.stun > 0 ? 0.6 + 0.4 * Math.sin(t * 40) : 1;
       const flip = e.dir > 0 ? -1 : 1;                       // sprites originais olham para a ESQUERDA
+      // expressividade: antecipação antes do pulo, esticada no ar, tremedeira de pânico ao tomar golpe
+      let ex = 1, ey = 1, er = 0;
+      if (e.stun > 0) { er = Math.sin(t * 55) * 0.14; ey = 1.08; ex = 0.95; }
+      else if (e.type === 'hopper') { if (e.air) { ey = 1.14; ex = 0.9; } else if (e.hopT < 0.32) { ey = 0.82; ex = 1.14; } }
+      else if (e.type === 'ant') { ey = 1 + 0.05 * Math.sin(e.anim * 30); ex = 1 - 0.03 * Math.sin(e.anim * 30); }
+      else if (e.type === 'gator') { const near = Math.abs(cx - (player.x + player.w / 2)) < 230; ey = 1 + (near ? 0.06 : 0.025) * Math.sin(t * (near ? 11 : 4)); er = near ? -0.05 * flip * Math.sin(t * 9) : 0; }
       const r0 = rc[name];
       blob(cx, e.air ? e.floorY : fy, 22, 0.32);
-      const offX = flip < 0 ? (r0.w - ax) * S : ax * S;
+      const offX = (flip < 0 ? (r0.w - ax) * S : ax * S) * ex;
       const hf = e.stun > 0.36 ? 2.6 : dim;      // 1-2 quadros de clarão branco ao tomar o golpe
-      spr(name, cx - offX, fy - ay * S, flip * S, S, { col: [hf, hf, hf, 1] });
+      spr(name, cx - offX, fy - ay * S * ey, flip * S * ex, S * ey, { col: [hf, hf, hf, 1], rot: er, px: offX, py: ay * S * ey });
     }
 
     // jogador
@@ -736,11 +758,11 @@
   function drawPlayer(t, blob) {
     if (player.dead && G.state === 'over') return;
     const set = atlas.set, rc = rects, A = RC.PLAYER_ANCHORS;
-    if (!A.glide) { A.glide = [[54, 30, 0, 'head'], [54, 30, 0, 'head'], [54, 30, 0, 'head'], [54, 30, 0, 'head']]; A.pound = [[43, 53, 0, 'ball']]; }
+    if (!A.glide) { A.glide = RC.GLIDE_ANCHORS || [[45, 30, 0, 'head']]; A.pound = [[43, 27, 0, 'ball']]; }
     let anim, n, rate, fy = 47, ax = 40, ay = 47, cidx;
     if (player.hurtT > 0) { anim = 'hurt'; n = 2; rate = 8; ax = 40; ay = 44; }
-    else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 53; }
-    else if (player.gliding) { anim = 'glide'; n = 4; rate = 9; ax = 50; ay = 38; }
+    else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 36; }
+    else if (player.gliding) { anim = 'glide'; n = 4; rate = 11; ax = 42; ay = 30; }
     else if (!player.grounded) { anim = 'jump'; n = 4; rate = 15; ax = 43; ay = 36; }
     else if (Math.abs(player.vx) > 40 || player.finishing) { anim = 'run'; n = 6; rate = 8 + Math.abs(player.vx) / 28; }
     else { anim = 'idle'; n = 8; rate = 8; }
@@ -858,7 +880,7 @@
       const L0 = e.pl != null ? e.pl : e.left, R0 = e.pr != null ? e.pr : e.right;
       if (L0 != null && R0 != null) { c.strokeStyle = 'rgba(255,120,60,.9)'; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(X(L0), Y(e.y + e.h + 4)); c.lineTo(X(R0), Y(e.y + e.h + 4)); c.stroke(); c.setLineDash([]); }
     }
-    for (const q2 of lv.props) box(q2.x - 16, q2.y - 30, 32, 30, '#6cf');
+    for (const q2 of lv.props) if (q2.type === 'crate') box(q2.x - 20, q2.y - 40, 40, 40, '#6cf'); else box(q2.x - 18, q2.y - 30, 36, 30, '#6cf');
     for (const cp of lv.checkpoints) box(cp.x - 12, cp.y - 40, 24, 40, '#fc6');
     for (const n of G.nuts) if (!n.taken) { c.strokeStyle = n.golden ? '#fd0' : '#9f9'; c.strokeRect(X(n.x - 6), Y(n.y - 6), 12 * k, 12 * k); }
     box(player.x, player.y, player.w, player.h, '#0ff');
@@ -892,6 +914,11 @@
 
     addLights(cam);
     R.flush();
+    // separação do plano de ação: escurece/dessatura levemente o fundo (só em fases de dia)
+    if ((G.mood && lv.mood) !== undefined) {
+      const a = [0.2, 0.2, 0.16, 0.0, 0.0][lv.mood] || 0;
+      if (a > 0) R.sprite(atlas.set, rects.dot, cam - 10, -10, (WW + 20) / rects.dot.w, (WH + 20) / rects.dot.h, { col: [0.06, 0.05, 0.1, a], lit: 0, noSnap: true });
+    }
     // terreno
     for (const c of G.res.chunks) {
       if (c.x0 > cam + WW || c.x0 + c.w < cam) continue;
@@ -906,7 +933,7 @@
       R.sprite(B.set, { x: it.x, y: it.y, w: it.W, h: it.Hh }, p.x - 4 * S + jx, p.y - B.topTexel * S + jy, S, S, { noSnap: false, col: p.crumble ? [1.25, 1.05, 0.8] : [1, 1, 1] });
     });
     EV.emit('drawBehind', t, cam);
-    drawActors(t);
+    R.setRim(0.3); drawActors(t); R.setRim(0);
     EV.emit('drawFront', t, cam);
     drawParticles(t);
     // vaga-lumes (aditivo)
@@ -975,7 +1002,8 @@
     if (G.state !== 'paused') updateParticles(dt);
     G.shake = Math.max(0, G.shake - dt * 28); G.flash = Math.max(0, G.flash - dt * 2.4); G.aberr = Math.max(0, G.aberr - dt * 0.2);
     G.fade += (G.fadeTarget - G.fade) * (1 - Math.exp(-dt * 4));
-    for (const p of G.lv ? G.lv.platforms : []) if (p.crumble) {
+    if (G.state === 'title') ui.toast.classList.remove('show');
+    for (const p of (G.lv && G.state === 'playing' && !G.dialogue) ? G.lv.platforms : []) if (p.crumble) {
       if (p.cT > 0) { p.cT -= dt; if (p.cT <= 0) { p.off = true; p.offT = 2.8; burst('dust', p.x + p.w / 2, p.y + 6, 10, 110, { col: [0.45, 0.3, 0.18], life: 0.7, size: 1.3 }); burst('leaf', p.x + p.w / 2, p.y, 5, 120, { name: 'leaf_1', g: 500, vr: 6, life: 0.9 }); sfx('kill', 0.2, 0.6); } }
       else if (p.off) { p.offT -= dt; if (p.offT <= 0) { p.off = false; p.cT = 0; } }
     }
