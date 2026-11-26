@@ -458,8 +458,8 @@
   const ITEM_COL = { item_corda: [0.8, 0.88, 1], item_palheta: [1, 0.8, 0.5], item_amp: [1, 0.85, 0.5], item_chave: [1, 0.9, 0.3], item_panfleto: [1, 0.85, 0.6], item_saco: [1, 0.8, 0.4] };
   function boss(x, footY, t, dir, sc, anim, tint, extra) {        // o Barão e seus capangas: mesmo sprite, escalas e tons diferentes
     const g = api(), nm = frameOf('boss_' + (anim || 'walk'), 6, t, 7), r = g.rects[nm]; if (!r) return;
-    const k = (tint || [1, 1, 1]);
-    g.spr(nm, x - (dir > 0 ? 0 : -r.w * g.S * sc) - r.w * g.S * sc / 2 * (dir > 0 ? 1 : -1) * 1, footY - r.h * g.S * sc + 4, (dir > 0 ? -1 : 1) * g.S * sc, g.S * sc, Object.assign({ col: [k[0], k[1], k[2], 1], emit: 0.04 }, extra));
+    const k = (tint || [1, 1, 1]), br = (anim || 'walk') === 'idle' ? 1 + Math.sin(t * 2.4 + x * 0.01) * 0.025 : 1;   // parado: respira
+    g.spr(nm, x - (dir > 0 ? 0 : -r.w * g.S * sc) - r.w * g.S * sc / 2 * (dir > 0 ? 1 : -1) * 1, footY - r.h * g.S * sc * br + 4, (dir > 0 ? -1 : 1) * g.S * sc, g.S * sc * br, Object.assign({ col: [k[0], k[1], k[2], 1], emit: 0.04 }, extra));
   }
   EV.on('drawBehind', (t, cam) => {
     const g = api(); if (!g || !M || !g.rects || g.G.state === 'title') return;

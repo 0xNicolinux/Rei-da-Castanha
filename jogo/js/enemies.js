@@ -509,6 +509,7 @@
           break;
         default: name = 'boss_idle_' + fr(4, 4);
       }
+      if (/^boss_idle/.test(name)) { const b = Math.sin(t * 2.4); sy = 1 + b * 0.025; sx = 1 - b * 0.012; }   // de pé respirando (o pacote não tem quadros de parado)
       if (e.inv > 0.4 && e.stun <= 0) col = [1.3, 1.3, 1.3, 1];
       draw(name, cx + ox, e.y + e.h + 2, { face: e.dir, sx, sy, col, emit: e.st === 'roar' ? 0.35 : 0 });
       if (e.stun > 0.1 || (e.st === 'charge' && e.sub === 'bonk')) stars(cx, e.y - 4, t, 4, 34);

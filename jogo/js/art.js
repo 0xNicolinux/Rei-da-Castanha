@@ -1070,7 +1070,10 @@
       };
       const put = (target, canvas) => { for (let i = defs.length - 1; i >= 0; i--) if (defs[i].name === target) defs.splice(i, 1); add(target, canvas); };
       const bear = kit(['bear-walk1', 'bear-walk2', 'bear-walk3', 'bear-walk4'], 2, false, true);
-      if (bear) for (const k of Object.keys(BOSS_POSES)) BOSS_POSES[k].forEach((p, i) => put(`boss_${k}_${i + 1}`, bear[i % 4]));
+      // o pacote só tem a caminhada; o quadro 2 é o urso de pé. Só anda (walk/dash) quem se move —
+      // parado, carregando golpe, pulando ou zonzo ele fica de pé, em vez de "correr parado".
+      const BEAR_FRAME = { walk: [0, 1, 2, 3], dash: [0, 2] };
+      if (bear) for (const k of Object.keys(BOSS_POSES)) BOSS_POSES[k].forEach((p, i) => put(`boss_${k}_${i + 1}`, bear[BEAR_FRAME[k] ? BEAR_FRAME[k][i % BEAR_FRAME[k].length] : 1]));
       const vul = kit(['vulture-idle1', 'vulture-idle2', 'vulture-idle3', 'vulture-idle4'], 1);
       if (vul) { vul.forEach((c, i) => put(`npc_corvo_${i + 1}`, c)); put('npc_corvo_t1', vul[1]); put('npc_corvo_t2', vul[3]); }
       const opo = kit(['opossum-1', 'opossum-2', 'opossum-3', 'opossum-4', 'opossum-5', 'opossum-6'], 1, false, true);
