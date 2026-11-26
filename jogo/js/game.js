@@ -995,7 +995,12 @@
     G.time += dt;
     pollPad(dt);
     if (G.hitstop > 0) { G.hitstop -= dt; dt = 0; }
-    if (G.state === 'playing' || G.state === 'finished') { if (G.state === 'playing') updateWorld(dt); }
+    if (G.state === 'playing') {
+      // física em subpassos de no máximo 1/240 s: o pulo tem a mesma altura a 30, 60 ou 144 Hz
+      // (o gerador de fases conta com o pulo "ideal"); para se a fase acabar ou um impacto congelar a tela
+      const n = Math.max(1, Math.ceil(dt * 240 - 1e-6)), h = dt / n;
+      for (let i = 0; i < n && G.state === 'playing' && !(i && G.hitstop > 0); i++) updateWorld(h);
+    }
     else if (G.state === 'title') {
       player.animT += dt; player.idleT += dt; G.camX = 0;
     }
