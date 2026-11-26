@@ -1,6 +1,10 @@
 ARTE E SONS — SUNNY LAND WOODS
 Os sprites (esquilo, inimigos, itens) e os sons em assets/woods/ vêm do pacote Sunny Land Woods, de Luis Zuno (Ansimuz), licenciado em Creative Commons Zero (CC0). Cópia da licença: assets/woods/LICENSE-CC0.pdf. https://opengameart.org/content/sunnyland-woods
 
+BICHOS SUNNY LAND (CC0)
+Urso (Barão e capangas), morcego, abutre (Urubu), besouro, gambá e sapo em assets/sunnyland/ vêm dos pacotes SunnyLand (Free Pixel Game Art, Enemies Pack 1 e Enemies Pack), de Luis Zuno (Ansimuz), licenciados em Creative Commons Zero (CC0). Cópia da licença: assets/sunnyland/LICENSE-CC0.pdf. https://itch.io/c/394532/sunnyland
+As irmãs Mel e Noz são o esquilo do Sunny Land Woods com outra paleta.
+
 GERADO POR CÓDIGO (próprio do projeto)
 Terreno, plataformas de galho, florestas de fundo, céu, coroa, caminhão, partículas e toda a iluminação/shaders são gerados em tempo de execução (js/world.js, js/art.js, js/gl.js).
 

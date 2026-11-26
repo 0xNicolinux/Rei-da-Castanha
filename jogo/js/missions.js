@@ -22,31 +22,31 @@
     ['No festival sob a lua, só um sai com o amplificador.', 'Ato V · Duelo no palco']
   ];
   const INTRO = [
-    [D('Rei', 'rei', L('shock', 'Doze mil castanhas. Evaporaram.')), D('Corvo Fofoqueiro', 'corvo', 'Dizem por aí que foi um tigre-dente-de-sabre.'),
-      D('Rei', 'rei', 'Tigre não usa saco de juta, Corvo.'), D('Corvo Fofoqueiro', 'corvo', '...Dizem que usa.')],
+    [D('Rei', 'rei', L('shock', 'Doze mil castanhas. Evaporaram.')), D('Urubu Fofoqueiro', 'corvo', 'Dizem por aí que foi um tigre-dente-de-sabre.'),
+      D('Rei', 'rei', 'Tigre não usa saco de juta, Urubu.'), D('Urubu Fofoqueiro', 'corvo', '...Dizem que usa.')],
     [D('Rei', 'rei', L('angry', 'O Rei não persegue ladrão com educação.'), 'O Rei persegue com amplificador.'),
-      D('Corvo Fofoqueiro', 'corvo', 'Dizem que o Barão só perde no palco.'), D('Rei', 'rei', 'Então o Rei precisa de uma guitarra.'),
-      D('Corvo Fofoqueiro', 'corvo', 'Você é um esquilo.'), D('Rei', 'rei', L('happy', 'Um esquilo com repertório.'))],
+      D('Urubu Fofoqueiro', 'corvo', 'Dizem que o Barão só perde no palco.'), D('Rei', 'rei', 'Então o Rei precisa de uma guitarra.'),
+      D('Urubu Fofoqueiro', 'corvo', 'Você é um esquilo.'), D('Rei', 'rei', L('happy', 'Um esquilo com repertório.'))],
     [D('Irmã Mel', 'irma1', 'Rei! Antes de soltar a gaiola, vamos falar de preço?'), D('Rei', 'rei', 'Estou te salvando.'),
       D('Irmã Mel', 'irma1', 'Resgate básico ou premium?'), D('Irmã Noz', 'irma2', 'Mel.'), D('Irmã Mel', 'irma1', 'Só pergunto.')],
-    [D('Texugo', 'texugo', 'Sem luz.'), D('Rei', 'rei', 'A gangue apagou os lampiões da estrada.'), D('Texugo', 'texugo', 'Eu dirijo.'),
-      D('Rei', 'rei', 'O Rei acende. Você dirige.'), D('Texugo', 'texugo', 'Devagar.'), D('Rei', 'rei', L('happy', 'Com estilo.'))],
+    [D('Gambá', 'texugo', 'Sem luz.'), D('Rei', 'rei', 'A gangue apagou os lampiões da estrada.'), D('Gambá', 'texugo', 'Eu dirijo.'),
+      D('Rei', 'rei', 'O Rei acende. Você dirige.'), D('Gambá', 'texugo', 'Devagar.'), D('Rei', 'rei', L('happy', 'Com estilo.'))],
     [D('Rei', 'rei', L('angry', 'Barão. As castanhas.'))]
   ];
-  const BOSS_INTRO = [D('Barão Guaxinim', 'barao', 'Majestade! Bem-vindo ao meu recital particular.'), D('Rei', 'rei', 'Devolve as castanhas, Barão.'),
-    D('Barão Guaxinim', 'barao', 'Castanhas? Que vulgar. Eu sequestrei a ATENÇÃO.'), D('Rei', 'rei', 'Você sequestrou doze mil castanhas.'), D('Barão Guaxinim', 'barao', 'Detalhes são para os pequenos.')];
-  const RHYME = [D('Barão Guaxinim', 'barao', L('angry', 'Sou o Barão, dono do refrão, e você é só um caminhão!'), 'Quer dizer... um grão.'),
-    D('Barão Guaxinim', 'barao', L('angry', 'Eu rimo com ladrão, com camarão, com Napoleão!'), 'Com Napoleão não rima, mas a plateia já aplaudiu.')];
+  const BOSS_INTRO = [D('Barão Urso', 'barao', 'Majestade! Bem-vindo ao meu recital particular.'), D('Rei', 'rei', 'Devolve as castanhas, Barão.'),
+    D('Barão Urso', 'barao', 'Castanhas? Que vulgar. Eu sequestrei a ATENÇÃO.'), D('Rei', 'rei', 'Você sequestrou doze mil castanhas.'), D('Barão Urso', 'barao', 'Detalhes são para os pequenos.')];
+  const RHYME = [D('Barão Urso', 'barao', L('angry', 'Sou o Barão, dono do refrão, e você é só um caminhão!'), 'Quer dizer... um grão.'),
+    D('Barão Urso', 'barao', L('angry', 'Eu rimo com ladrão, com camarão, com Napoleão!'), 'Com Napoleão não rima, mas a plateia já aplaudiu.')];
   const DONE = [
-    [D('Rei', 'rei', "Leia comigo: 'Festival sob a Lua. Atração principal: Barão Guaxinim'."), D('Corvo Fofoqueiro', 'corvo', 'Barão Guaxinim... o famoso bandido do Egito.'),
-      D('Rei', 'rei', 'Corvo. Ele é um guaxinim.'), D('Corvo Fofoqueiro', 'corvo', 'Dizem que é do Egito.')],
-    [D('Rei', 'rei', L('happy', 'Corda, palheta e amplificador. Falta só o nome da banda.')), D('Rei', 'rei', 'Rei da Castanha e os Trovões de Inverno.'), D('Corvo Fofoqueiro', 'corvo', 'Dizem que já tem fã-clube.')],
+    [D('Rei', 'rei', "Leia comigo: 'Festival sob a Lua. Atração principal: Barão Urso'."), D('Urubu Fofoqueiro', 'corvo', 'Barão Urso... o famoso bandido do Egito.'),
+      D('Rei', 'rei', 'Urubu. Ele é um urso.'), D('Urubu Fofoqueiro', 'corvo', 'Dizem que é do Egito.')],
+    [D('Rei', 'rei', L('happy', 'Corda, palheta e amplificador. Falta só o nome da banda.')), D('Rei', 'rei', 'Rei da Castanha e os Trovões de Inverno.'), D('Urubu Fofoqueiro', 'corvo', 'Dizem que já tem fã-clube.')],
     [D('Irmã Mel', 'irma1', 'Chegamos. Desconto de 20% no frete, por conta do susto.'), D('Rei', 'rei', 'Eu não cobrei nada.'), D('Irmã Mel', 'irma1', 'Então o desconto é maior ainda.'),
       D('Irmã Noz', 'irma2', 'Eu toco baixo, se alguém precisar de um palco.')],
-    [D('Texugo', 'texugo', 'Chegamos.'), D('Rei', 'rei', 'Só isso? Sem discurso?'), D('Texugo', 'texugo', 'Só.')],
-    [D('Barão Guaxinim', 'barao', L('shock', 'Nunca me chamaram para o festival. Nem para cantar o parabéns.')), D('Rei', 'rei', 'Você roubou doze mil castanhas por isso?'),
-      D('Barão Guaxinim', 'barao', 'Foi um desvio de carreira.'), D('Rei', 'rei', 'O Rei não perdoa. O Rei divide.'), D('Barão Guaxinim', 'barao', 'Dividir? Isso é... legal?'),
-      D('Rei', 'rei', 'Você carrega o amplificador.'), D('Barão Guaxinim', 'barao', L('happy', 'Roadie. Meu sonho de infância.')), D('Rei', 'rei', 'Seu sonho de infância era roubar.'), D('Barão Guaxinim', 'barao', 'Era roadie. O resto foi ansiedade.')]
+    [D('Gambá', 'texugo', 'Chegamos.'), D('Rei', 'rei', 'Só isso? Sem discurso?'), D('Gambá', 'texugo', 'Só.')],
+    [D('Barão Urso', 'barao', L('shock', 'Nunca me chamaram para o festival. Nem para cantar o parabéns.')), D('Rei', 'rei', 'Você roubou doze mil castanhas por isso?'),
+      D('Barão Urso', 'barao', 'Foi um desvio de carreira.'), D('Rei', 'rei', 'O Rei não perdoa. O Rei divide.'), D('Barão Urso', 'barao', 'Dividir? Isso é... legal?'),
+      D('Rei', 'rei', 'Você carrega o amplificador.'), D('Barão Urso', 'barao', L('happy', 'Roadie. Meu sonho de infância.')), D('Rei', 'rei', 'Seu sonho de infância era roubar.'), D('Barão Urso', 'barao', 'Era roadie. O resto foi ansiedade.')]
   ];
   const EPILOGUE = ['Castanha pra todo lado.', 'Fim. Ou o bis'];
   const TITLE = ['O tronco vazio', 'A fúria vira rock', 'As duas irmãs', 'Estrada escura', 'Duelo no palco'];
@@ -274,9 +274,9 @@
     for (let i = 0; i < 18; i++) G.nuts.push({ x: px - 260 + i * 30, y: -20 - (i % 4) * 30, golden: i % 6 === 0, taken: false, ph: 0, mag: false, vy: 40, drop: true });
   }
   const CATCH = [
-    [D('Capanga Rabo-Anelado', 'capanga', 'Foi um tapa ou uma carícia violenta?'), D('Rei', 'rei', 'Foi um aviso de doze mil castanhas.')],
-    [D('Capanga Rabo-Anelado', 'capanga', 'Meu contrato não cobre tapa duplo.')],
-    [D('Capanga Rabo-Anelado', 'capanga', L('shock', 'Tá bom! O chefe ia me demitir de qualquer jeito.'), 'Toma o panfleto. Não diz que fui eu.')]
+    [D('Capanga Ursinho', 'capanga', 'Foi um tapa ou uma carícia violenta?'), D('Rei', 'rei', 'Foi um aviso de doze mil castanhas.')],
+    [D('Capanga Ursinho', 'capanga', 'Meu contrato não cobre tapa duplo.')],
+    [D('Capanga Ursinho', 'capanga', L('shock', 'Tá bom! O chefe ia me demitir de qualquer jeito.'), 'Toma o panfleto. Não diz que fui eu.')]
   ];
   const PART_LINE = { item_corda: 'Corda. Prata pura, afinação impura.', item_palheta: 'Palheta de pedra. Pesada como as intenções do Rei.', item_amp: L('happy', 'Onze no volume. Onze é o novo dez.') };
 
@@ -399,7 +399,7 @@
           const ex = solidX(l.x + 340);
           const flat = [-48, 0, 48].every((o) => gTop(ex + o) === gTop(ex));
           if (flat) for (let k = 0; k < 2; k++) { const t2 = k ? 'hopper' : 'ant'; const e = g.makeEnemy({ type: t2, left: ex - 90 + k * 20, right: ex + 90 + k * 20, y: gTop(ex), speed: 80 }, 7 + k); G.enemies.push(e); }
-          say([D('Capanga Rabo-Anelado', 'capanga', 'Ninguém avisou que o caminhão tinha segurança!'), D('Texugo', 'texugo', 'Eu.')]);
+          say([D('Capanga Ursinho', 'capanga', 'Ninguém avisou que o caminhão tinha segurança!'), D('Gambá', 'texugo', 'Eu.')]);
         }
         objective();
       }

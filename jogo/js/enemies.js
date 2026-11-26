@@ -9,15 +9,15 @@
      beetle_1..4      besouro blindado andando       54x40     beetle_flip_1..2 de barriga p/ cima (perninhas mexendo)
      toad_1..2        sapo parado (respira)          46x36     toad_puff_1..2 papo inflando   toad_spit (1) cuspindo   toad_hurt (1)
      proj_glob_1..2   bola de gosma do sapo          14x14
-     boss_idle_1..4   Barão Guaxinim parado          80x80     boss_walk_1..4  boss_wind_1..2 (carregando, o 2 é vermelho)
+     boss_idle_1..4   Barão Urso parado          80x80     boss_walk_1..4  boss_wind_1..2 (carregando, o 2 é vermelho)
      boss_dash_1..2   investida com o saco de escudo           boss_jump_1..2 (subindo, descendo)   boss_slam_1 (pousou)
      boss_throw_1..2  arremesso (levanta, solta)               boss_hurt_1..2   boss_tired_1 (zonzo)
      fx_star          estrelinha de tontura 11x10      fx_excl  "!" de alerta 6x12     fx_shock  poeira da onda de choque 48x22
    NPCs (idle _1.._4 em loop ~5 fps; falando alterne _t1/_t2 ~8 fps)
      npc_irma1_1..4, npc_irma1_t1..2   Rita, irmã guitarrista, bandana rosa, guitarra vermelha, pelo ruivo      58x66
      npc_irma2_1..4, npc_irma2_t1..2   Rosa, irmã baixista, franja ciano + óculos escuros, baixo azul-petróleo, pelo cinza  58x66
-     npc_texugo_1..4, npc_texugo_t1..2 Seu Texugo, caminhoneiro (boné amarelo, macacão, chave inglesa)         68x66
-     npc_corvo_1..4, npc_corvo_t1..2   Corvo fofoqueiro com monóculo, empoleirado em galhinho (galho incluso)  48x54
+     npc_texugo_1..4, npc_texugo_t1..2 Seu Gambá, caminhoneiro (boné amarelo, macacão, chave inglesa)         68x66
+     npc_corvo_1..4, npc_corvo_t1..2   Urubu fofoqueiro com monóculo, empoleirado em galhinho (galho incluso)  48x54
    ITENS / PROPS (âncora centro-inferior; item_* têm _1 normal e _2 com brilho: alterne ~3 fps)
      item_corda_1..2 22x22   item_palheta_1..2 20x22   item_chave_1..2 26x24   item_amp_1..2 34x34 (_1 apagado, _2 aceso)
      crate 36x36   crate_hit 36x36 (rachada)   crate_piece_1..3 10x10 (lascas)
@@ -320,7 +320,7 @@
     drawDead(e, t) { if (!e.dd) launch(e, 'punch'); drawBody(e, t, 'toad_hurt', { max: e.dd && e.dd.squash ? 1.1 : 1.5, restK: 0.3 }); return true; }
   };
 
-  /* ---------------------------------------------------------------- CHEFE: Barão Guaxinim, o ladrão das castanhas */
+  /* ---------------------------------------------------------------- CHEFE: Barão Urso, o ladrão das castanhas */
   const BOSS_HP = 12;
   let boss = null, bar = null, barFill = null, barPips = null;
   const clamp2 = (e) => { e.x = clamp(e.x, e.left - e.w / 2, e.right - e.w / 2); };
@@ -331,7 +331,7 @@
     bar.id = 'boss-bar';
     bar.setAttribute('aria-hidden', 'true');
     bar.style.cssText = 'position:fixed;left:50%;top:104px;transform:translateX(-50%);width:min(520px,72vw);z-index:6;pointer-events:none;display:none;text-align:center;font-family:"Lilita One",system-ui,sans-serif;color:#ffe9b0;text-shadow:0 2px 0 #3b1608,0 0 10px #000a;transition:opacity .4s';
-    bar.innerHTML = '<div style="font-size:clamp(14px,2.2vw,20px);letter-spacing:.04em;margin-bottom:4px">Barão Guaxinim, o Ladrão das Castanhas</div>' +
+    bar.innerHTML = '<div style="font-size:clamp(14px,2.2vw,20px);letter-spacing:.04em;margin-bottom:4px">Barão Urso, o Ladrão das Castanhas</div>' +
       '<div style="height:16px;border:3px solid #3b1608;border-radius:10px;background:#2a1208cc;overflow:hidden;position:relative;box-shadow:0 3px 0 #0006"><div class="f" style="height:100%;width:100%;background:linear-gradient(#ffd25a,#e0861e);border-radius:6px;transition:width .25s"></div>' +
       '<div class="p" style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(100%/12 - 2px),#3b1608 calc(100%/12 - 2px) calc(100%/12))"></div></div>';
     document.body.appendChild(bar);
@@ -592,7 +592,7 @@
     try { diversify(lv); } catch (err) { console.error('[enemies] diversify', err); }
     if (lv.index === 4 && !RC.missions) {                                // sem módulo de missões: o chefe fica na arena antes do caminhão
       const b = spawnBoss(lv.goal.x - 760);
-      G.finishBlock = () => (boss && !boss.dead ? 'Derrote o Barão Guaxinim para pegar as castanhas de volta!' : null);
+      G.finishBlock = () => (boss && !boss.dead ? 'Derrote o Barão Urso para pegar as castanhas de volta!' : null);
     }
   });
   EV.on('update', (dt) => {

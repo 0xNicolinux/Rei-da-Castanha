@@ -1045,6 +1045,43 @@
     }));
 
     addNewSprites(add);
+    // bichos CC0 da Ansimuz (Sunny Land, js/sprites-cc0.js) no lugar dos desenhados por código
+    {
+      const CC = RC.SPRITE_CC0 || {};
+      const names = Object.keys(CC), imgs = {};
+      (await Promise.all(names.map((n) => loadImg(CC[n])))).forEach((im, i) => { imgs[names[i]] = im; });
+      // inimigos/chefe: o código espera o sprite olhando para a ESQUERDA; NPCs: para a DIREITA
+      // recorta todos os quadros de um bicho pela mesma caixa (sem tremer) e amplia por k inteiro
+      const kit = (frames, k, flipV, flipH) => {
+        const ims = frames.map((f) => imgs[f]).filter(Boolean); if (!ims.length) return null;
+        const W = ims[0].width, H = ims[0].height;
+        let x0 = W, y0 = H, x1 = -1, y1 = -1;
+        for (const im of ims) {
+          const c = cv(W, H), x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, W, H).data;
+          for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) if (d[(y * W + xx) * 4 + 3] > 20) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        }
+        const w = x1 - x0 + 1, h = y1 - y0 + 1;
+        return ims.map((im) => {
+          const c = cv(w * k, h * k), x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+          if (flipV) { x.translate(0, h * k); x.scale(1, -1); }
+          if (flipH) { x.translate(w * k, 0); x.scale(-1, 1); }
+          x.drawImage(im, x0, y0, w, h, 0, 0, w * k, h * k); return c;
+        });
+      };
+      const put = (target, canvas) => { for (let i = defs.length - 1; i >= 0; i--) if (defs[i].name === target) defs.splice(i, 1); add(target, canvas); };
+      const bear = kit(['bear-walk1', 'bear-walk2', 'bear-walk3', 'bear-walk4'], 2, false, true);
+      if (bear) for (const k of Object.keys(BOSS_POSES)) BOSS_POSES[k].forEach((p, i) => put(`boss_${k}_${i + 1}`, bear[i % 4]));
+      const vul = kit(['vulture-idle1', 'vulture-idle2', 'vulture-idle3', 'vulture-idle4'], 1);
+      if (vul) { vul.forEach((c, i) => put(`npc_corvo_${i + 1}`, c)); put('npc_corvo_t1', vul[1]); put('npc_corvo_t2', vul[3]); }
+      const opo = kit(['opossum-1', 'opossum-2', 'opossum-3', 'opossum-4', 'opossum-5', 'opossum-6'], 1, false, true);
+      if (opo) { for (let i = 0; i < 4; i++) put(`npc_texugo_${i + 1}`, opo[i]); put('npc_texugo_t1', opo[4]); put('npc_texugo_t2', opo[5]); }
+      const bat = kit(['bat-fly1', 'bat-fly2', 'bat-fly3'], 1, false, true);
+      if (bat) { [0, 1, 2, 1].forEach((j, i) => put(`wasp_${i + 1}`, bat[j])); put('wasp_hurt', bat[0]); }
+      const bet = kit(['bettle1', 'bettle2', 'bettle3', 'bettle4'], 1), betF = kit(['bettle1', 'bettle2'], 1, true);
+      if (bet) { bet.forEach((c, i) => put(`beetle_${i + 1}`, c)); betF.forEach((c, i) => put(`beetle_flip_${i + 1}`, c)); }
+      const frog = kit(['frog-idle-1', 'frog-idle-2', 'frog-idle-3', 'frog-idle-4', 'frog-jump-1', 'frog-jump-2'], 1);
+      if (frog) { put('toad_1', frog[0]); put('toad_2', frog[1]); put('toad_puff_1', frog[2]); put('toad_puff_2', frog[3]); put('toad_spit', frog[4]); put('toad_hurt', frog[5]); }
+    }
     // irmãs: o próprio esquilo CC0 (Sunny Land Woods) com outra paleta e um acessório pequeno — mesmo estilo e animação do Rei
     {
       const idle = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => defs.find((d) => d.name === 'idle_' + i));
