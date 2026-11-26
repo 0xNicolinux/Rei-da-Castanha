@@ -62,6 +62,7 @@
           a.wave++;
           if (a.wave >= a.waves) {
             a.st = 'done'; g.camLock = null;
+            if (a.onClear) a.onClear(a);
             api.toast('Caminho livre!', 1600); api.sfx('item', 0.5, 1.3); if (RC.audio && RC.audio.jingle) { /* opcional */ }
             for (let i = 0; i < 7; i++) g.nuts.push({ x: (a.x0 + a.x1) / 2 + (i - 3) * 22, y: a.y - 90, golden: i === 3, taken: false, ph: i, mag: false, vy: -380 - i * 20, drop: true });
           } else { a.foes = []; spawnWave(a); api.toast(`Onda ${a.wave + 1} de ${a.waves}`, 1200); }
@@ -83,5 +84,7 @@
       for (const x of [a.x0, a.x1]) R.sprite(api.atlas.set, r, x - 12, a.y - 220, 24 / r.w, 220 / r.h, { col: [1, 0.55, 0.25, 0.5 + 0.2 * Math.sin(t * 8)], lit: 0, noSnap: true });
     }
   });
-  RC.setpieces = { arenas: () => arenas, winds: () => winds };
+  /* emboscada criada pelas missões: onClear roda quando todas as ondas acabam */
+  function addArena(a) { const o = Object.assign({ st: 'idle', wave: 0, foes: [], waves: 2 }, a); arenas.push(o); return o; }
+  RC.setpieces = { arenas: () => arenas, winds: () => winds, addArena };
 })();

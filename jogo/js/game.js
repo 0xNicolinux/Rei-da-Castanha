@@ -414,6 +414,7 @@
       if (!e.boss) { e.air = true; e.vy = -320; }
     }
     if (hits >= 2) toast(`Pancada do Rei! ${hits} de uma vez`, 1100);
+    EV.emit('poundHits', hits);
     EV.emit('pound', cx, fy);
   }
 

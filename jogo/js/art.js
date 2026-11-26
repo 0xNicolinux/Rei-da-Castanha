@@ -910,6 +910,50 @@
     return outline(T.c, '#4a1008');
   }
 
+
+  /* ---------- itens da história ---------- */
+  function makePanfleto(f) {      // panfleto do festival: papel creme com faixa vermelha, lua e castanha; balança entre os quadros
+    const T = toolkit(24, 28), P = ramp('#f0e0b0'), sk = f ? 1 : 0;
+    T.poly([[3 + sk, 2], [20, 3 - sk], [21, 25], [2, 26]], P[2]);
+    T.rect(4 + sk, 3, 16, 1, P[3]);
+    T.poly([[3 + sk, 5], [20, 6 - sk], [20, 11], [3, 10]], '#c8283a'); T.rect(5, 7, 14, 1, '#ff7a86');
+    T.ell(12, 18, 4, 4, '#3b3a6a'); T.ell(14, 17, 3, 3, '#f0e0b0');           // lua crescente
+    T.ell(8, 22, 2, 2, '#b9701c'); T.px(8, 20, '#6a3a10');                    // castanha
+    for (let i = 0; i < 3; i++) T.rect(14 + i * 2 - 1, 22, 1, 1, '#7a5a30');
+    T.px(7, 8, '#fff3c4'); T.px(11, 8, '#fff3c4'); T.px(15, 8, '#fff3c4');
+    if (f) glint(T, 19, 5);
+    return outline(T.c, '#3a1c08');
+  }
+  function makeSaco(f) {          // saco de juta furado vazando castanhas
+    const T = toolkit(28, 30), J = ramp('#b8883a');
+    T.ell(14, 19, 11, 9, J, { fn: (x, y, i, u, v) => ((x + y) % 4 === 0 ? J[Math.max(0, i - 1)] : null) });
+    T.poly([[9, 11], [19, 11], [17, 6], [11, 6]], J[2]); T.rect(10, 10, 9, 2, '#6a3a18'); T.rect(11, 5, 7, 1, J[3]);
+    T.px(12, 4, '#d8a85a'); T.px(16, 4, '#d8a85a');
+    T.rect(12, 17, 5, 4, '#2a140b'); T.px(13, 18, '#ffd36a');               // remendo/furo
+    const d = f ? 2 : 0;
+    T.ell(15, 26 + d, 2, 2, '#c8782a'); T.ell(9 + d, 24 - d, 1.5, 1.5, '#e0983a'); T.px(15, 25 + d, '#fff0a0');
+    return outline(T.c, '#2a1608');
+  }
+  function makeGaiola(f) {        // gaiola pendurada por corda; balança
+    const T = toolkit(36, 52), sw = f ? 1 : -1;
+    T.line(18, 0, 18 + sw, 8, '#a8742a'); T.px(18 + sw, 8, '#d8a85a');
+    T.rect(5 + sw, 9, 26, 3, '#5a3418'); T.rect(5 + sw, 9, 26, 1, '#a86a30'); T.rect(5 + sw, 47, 26, 3, '#5a3418'); T.rect(5 + sw, 47, 26, 1, '#a86a30');
+    for (let k = 0; k <= 5; k++) { T.rect(6 + sw + k * 5, 12, 2, 35, '#7a4a22'); T.rect(6 + sw + k * 5, 12, 1, 35, '#c8884a'); }
+    T.rect(13 + sw, 28, 10, 8, '#c8c8d0'); T.rect(14 + sw, 29, 8, 6, '#5a5a68'); T.px(18 + sw, 32, '#ffd23a');   // cadeado
+    T.ell(18 + sw, 9, 14, 3, '#7a4a22', { fn: (x, y, i, u, v) => (v < 0 ? null : false) });
+    return outline(T.c, '#2a1508');
+  }
+  function makeLaje(f) {          // laje rachada: só a Pancada do Rei quebra
+    const T = toolkit(34, 22), G2 = ramp('#8a8a96');
+    T.poly([[1, 21], [2, 6], [8, 2], [26, 2], [32, 6], [33, 21]], G2[2]);
+    T.rect(3, 3, 28, 2, G2[3]); T.rect(1, 18, 32, 3, G2[0]);
+    T.line(15, 3, 12, 9, '#1a1a22'); T.line(12, 9, 17, 14, '#1a1a22'); T.line(17, 14, 14, 20, '#1a1a22'); T.line(12, 9, 8, 11, '#1a1a22');
+    T.line(24, 5, 22, 11, '#2a2a32'); T.px(7, 6, G2[3]); T.px(28, 8, G2[3]);
+    T.rect(5, 14, 3, 2, '#6a8a4a'); T.rect(26, 15, 4, 2, '#6a8a4a'); T.px(6, 13, '#8ab85a');
+    if (f) glint(T, 29, 4);
+    return outline(T.c, '#1a1a22');
+  }
+
   /* registra todos os sprites novos no atlas */
   function addNewSprites(add) {
     for (let i = 0; i < 4; i++) add('wasp_' + (i + 1), makeWasp(i, 'fly'));
@@ -930,6 +974,8 @@
     add('npc_texugo_t1', makeBadger(0, 0.4)); add('npc_texugo_t2', makeBadger(2, 1));
     for (let i = 0; i < 4; i++) add(`npc_corvo_${i + 1}`, makeCrow(i, 0));
     add('npc_corvo_t1', makeCrow(0, 0.5)); add('npc_corvo_t2', makeCrow(2, 1));
+    add('item_panfleto_1', makePanfleto(0)); add('item_panfleto_2', makePanfleto(1)); add('item_saco_1', makeSaco(0)); add('item_saco_2', makeSaco(1));
+    add('gaiola_1', makeGaiola(0)); add('gaiola_2', makeGaiola(1)); add('laje_1', makeLaje(0)); add('laje_2', makeLaje(1));
     add('item_corda_1', makeCorda(false)); add('item_corda_2', makeCorda(true));
     add('item_palheta_1', makePick(false)); add('item_palheta_2', makePick(true));
     add('item_chave_1', makeKey(false)); add('item_chave_2', makeKey(true));

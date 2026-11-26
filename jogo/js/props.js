@@ -31,7 +31,16 @@
   }
 
   // onda da Pancada do Rei quebra caixotes por perto
+  function breakSlab(c) {
+    const api = RC.game; c.broken = true; c.t = 0;
+    api.burst('spark', c.x, c.y - 20, 18, 260, { col: [0.8, 0.8, 0.9], life: 0.5 });
+    api.burst('dust', c.x, c.y - 8, 12, 150, { life: 0.8, size: 1.8, drag: 2 });
+    api.burst('leaf', c.x, c.y - 20, 8, 300, { name: 'crate_piece_2', g: 900, vr: 12, life: 1 });
+    api.sfx('land', 0.45, 0.6); api.sfx('kill', 0.3, 0.5); api.G.shake = Math.max(api.G.shake, 8); api.G.hitstop = 0.06;
+    if (c.onBreak) c.onBreak(c);
+  }
   EV.on('pound', (x, y) => {
+    for (const c of props) if (c.type === 'slab' && !c.broken && Math.abs(c.x - x) < 90 && Math.abs(c.y - y) < 50) breakSlab(c);
     for (const c of props) if (c.type === 'crate' && !c.broken && Math.abs(c.x - x) < 120 && Math.abs(c.y - y) < 46) breakCrate(c, 'punch');
   });
 
@@ -43,6 +52,7 @@
       if (s.broken) { s.t += dt; continue; }
       if (s.squash > 0) s.squash = Math.max(0, s.squash - dt * 3.2);
       if (s.shake > 0) s.shake -= dt;
+      if (s.type === 'slab') continue;
       if (Math.abs(pcx - s.x) > 60) continue;
       if (s.type === 'spring') {
         const over = Math.abs(pcx - s.x) < 26;
@@ -68,7 +78,9 @@
     prev.vy = p.vy; prev.g = p.grounded;
   });
 
-  RC.props = { CW, CH, solids: () => props.filter((c) => c.type === 'crate' && !c.broken).map((c) => ({ x0: c.x - CW, x1: c.x + CW, top: c.y - CH, bottom: c.y })) };
+  RC.props = { CW, CH,
+    solids: () => props.filter((c) => (c.type === 'crate' || c.type === 'slab') && !c.broken).map((c) => { const w = c.type === 'slab' ? 32 : CW; return { x0: c.x - w, x1: c.x + w, top: c.y - CH, bottom: c.y }; }),
+    addSlab: (x, y, onBreak) => { const c = { type: 'slab', x, y, squash: 0, broken: false, shake: 0, bob: 0, onBreak }; props.push(c); return c; } };
 
   function box(x, y, w, h, col) {
     const R = RC.game.R, r = rect('dot');
@@ -87,6 +99,9 @@
         const sq = Math.sin(s.squash * Math.PI) * s.squash;
         const sy = 1.35 * (1 - 0.35 * sq), sx = 1.35 * (1 + 0.25 * sq);
         api.spr('mush_2', s.x - r.w * S * sx / 2, s.y + 2 - r.h * S * sy, S * sx, S * sy, { emit: 0.55 + 0.25 * Math.sin(t * 3 + s.bob) });
+      } else if (s.type === 'slab' && !s.broken) {
+        const r = rect('laje_1'); if (!r) continue;
+        api.spr('laje_' + (1 + (Math.floor(t * 2.5) % 2)), s.x - r.w, s.y - 40 + 1, S, S, {});
       } else if (s.type === 'crate' && !s.broken) {
         const r = rect('crate');
         const sh = s.shake > 0 ? Math.sin(s.shake * 60) * 2 : 0;

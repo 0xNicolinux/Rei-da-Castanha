@@ -260,3 +260,28 @@ kbd{font:600 1.1cqw "Pixelify Sans",monospace;padding:.15cqw .55cqw;background:r
 
 .dlg-sprite{display:block;width:100%;height:100%;image-rendering:pixelated;filter:drop-shadow(0 .2cqw 0 rgba(0,0,0,.4))}
 body.boss-on #toast{top:max(19.5cqw,172px)}
+
+/* ---------- diálogo v2: caixa no alto (não cobre o NPC), retrato maior com emoções, placa colorida ---------- */
+.dlg{align-items:flex-start;padding:2.4cqw 4cqw 0;background:linear-gradient(180deg,rgba(5,7,18,.62),rgba(5,7,18,.32) 55%,rgba(5,7,18,.18))}
+.dlg-box{--pc:var(--gold);width:80cqw;min-height:14cqw;box-shadow:inset 0 0 0 .2cqw var(--pc),inset 0 0 0 .5cqw #1a0c06,0 1cqw 3cqw rgba(0,0,0,.55)}
+.dlg-portrait{width:12.5cqw;height:12.5cqw;box-shadow:inset 0 0 0 .25cqw var(--pc),inset 0 0 0 .5cqw #1a0c06;background:radial-gradient(circle at 50% 40%,#6a4a2a,#241008)}
+.dlg-body strong{color:var(--pc);display:inline-block;padding:.2cqw 1cqw .3cqw;margin-bottom:.8cqw;background:rgba(0,0,0,.38);border-left:.4cqw solid var(--pc)}
+.dlg-body p{font-size:max(1.8cqw,12px)}
+body.dlg-open #hud,body.dlg-open #toast,body.dlg-open .combo,body.dlg-open #boss-bar{opacity:0!important}
+.em-angry .dlg-sprite{animation:emShake .12s linear infinite}
+.em-happy .dlg-sprite{animation:emBounce .45s ease-in-out infinite}
+.em-shock .dlg-sprite{animation:emShock .5s cubic-bezier(.2,1.6,.4,1) 1}
+@keyframes emShake{0%{transform:translate(-2%,0) rotate(-2deg)}50%{transform:translate(2%,1%) rotate(2deg)}100%{transform:translate(-2%,0) rotate(-2deg)}}
+@keyframes emBounce{50%{transform:translateY(-8%) scale(1.04)}}
+@keyframes emShock{0%{transform:scale(.8)}60%{transform:scale(1.18,1.1)}100%{transform:scale(1)}}
+.ncard{position:absolute;inset:0;z-index:9;display:none;pointer-events:auto;background:rgba(2,3,10,.55)}
+.ncard.show{display:block;animation:ncfade .45s ease-out both}
+.nc-top,.nc-bot{position:absolute;left:0;right:0;height:17%;background:#000;display:block}
+.nc-top{top:0}.nc-bot{bottom:0}
+.nc-in{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center}
+.nc-in strong{display:block;font:400 4.6cqw/1.12 "Lilita One",sans-serif;color:#fff4dc;letter-spacing:.03em;text-transform:uppercase;text-shadow:0 .3cqw 0 #6a2d0c,0 .7cqw 1.6cqw rgba(0,0,0,.8)}
+.nc-in span{display:block;margin-top:1.4cqw;font:700 1.7cqw "Nunito",sans-serif;letter-spacing:.34em;text-transform:uppercase;color:#ffc931}
+.nc-in span:empty{display:none}
+@keyframes ncfade{from{opacity:0}}
+.ncard.show .nc-in{animation:ncin .9s cubic-bezier(.2,.9,.3,1) both}
+@keyframes ncin{from{opacity:0;transform:translateY(-46%) scale(1.06);letter-spacing:.12em}}

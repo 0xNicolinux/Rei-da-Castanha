@@ -123,7 +123,7 @@
     if (key === 'rei') { idle = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => 'idle_' + i); talk = idle; crownAt = A && A.idle; }
     else if (key === 'irma1' || key === 'irma2') { idle = [1, 2, 3, 4].map((i) => `npc_irma${W}_${i}`); talk = [`npc_irma${W}_t1`, `npc_irma${W}_t2`]; }
     else if (key === 'texugo' || key === 'corvo') { idle = [1, 2, 3, 4].map((i) => `npc_${key}_${i}`); talk = [`npc_${key}_t1`, `npc_${key}_t2`]; }
-    else if (key === 'boss' || key === 'barao') { idle = ['boss_idle_1', 'boss_idle_2', 'boss_idle_3'].filter((n) => R[n]); talk = idle; }
+    else if (key === 'boss' || key === 'barao' || key === 'capanga') { idle = ['boss_idle_1', 'boss_idle_2', 'boss_idle_3'].filter((n) => R[n]); talk = idle; }
     else return null;
     idle = idle.filter((n) => R[n]); talk = talk.filter((n) => R[n]);
     if (!idle.length) return null; if (!talk.length) talk = idle;
@@ -139,7 +139,7 @@
     for (const n of all) { const b = bb(n); ux0 = Math.min(ux0, b.x0); uy0 = Math.min(uy0, b.y0); ux1 = Math.max(ux1, b.x1); uy1 = Math.max(uy1, b.y1); }
     const crown = R.crown;
     if (crownAt && crown) uy0 = Math.min(uy0, Math.min.apply(null, crownAt.map((a) => a[1])) - crown.h + 3);
-    const bw = ux1 - ux0 + 1, bh = Math.round((uy1 - uy0 + 1) * (key === 'boss' || key === 'barao' ? 0.8 : 0.74));
+    const bw = ux1 - ux0 + 1, bh = Math.round((uy1 - uy0 + 1) * (key === 'boss' || key === 'barao' || key === 'capanga' ? 0.8 : 0.74));
     const side = Math.max(bw, bh) + 4;
     const cvs = document.createElement('canvas'); cvs.width = side; cvs.height = side;
     const g = cvs.getContext('2d'); g.imageSmoothingEnabled = false;
@@ -166,8 +166,16 @@
   let cur = null, lineIdx = 0, typing = null, shown = '';
   const gate = () => { const s = G().state; return s === 'playing' || s === 'finished' || s === 'loading'; };
 
+  const PITCH = { rei: 1.55, corvo: 2.1, texugo: 0.75, irma1: 1.8, irma2: 1.35, barao: 0.6, boss: 0.6, capanga: 1.0, narrador: 0.9 };
+  const PCOL = { rei: '#ffc931', corvo: '#9aa6ff', texugo: '#c8c8d0', irma1: '#ff8ab0', irma2: '#6ac8ff', barao: '#e8683a', boss: '#e8683a', capanga: '#b49ac8', narrador: '#fff4dc' };
+  let held = false;
   function setLine() {
-    const line = String(cur.lines[lineIdx] == null ? '' : cur.lines[lineIdx]);
+    const raw = cur.lines[lineIdx];
+    const line = String(raw == null ? '' : typeof raw === 'object' ? raw.t : raw);
+    const emo = raw && typeof raw === 'object' ? raw.e || '' : '';
+    const pk = cur.pkey;
+    el.dlgPortrait.className = 'dlg-portrait'; void el.dlgPortrait.offsetWidth; if (emo) el.dlgPortrait.classList.add('em-' + emo);
+    el.dlg.style.setProperty('--pc', PCOL[pk] || '#ffc931');
     shown = line;
     el.dlgNext.classList.remove('on');
     el.dlgSr.textContent = line;
@@ -175,15 +183,15 @@
     if (reduced()) { el.dlgText.textContent = line; el.dlgNext.classList.add('on'); return; }
     let i = 0; el.dlgText.textContent = '';
     typing = setInterval(() => {
-      i += 1; el.dlgText.textContent = line.slice(0, i);
-      if (i % 3 === 1) sfx('item', 0.12, 1.6 + Math.random() * 0.3);
+      i += held ? 4 : 1; el.dlgText.textContent = line.slice(0, i);
+      if (i % 3 === 1 || held) sfx('item', 0.1, (PITCH[pk] || 1.5) + Math.random() * 0.14);
       if (i >= line.length) { clearInterval(typing); typing = null; el.dlgNext.classList.add('on'); }
     }, 28);
   }
   function openNext() {
     const d = queue.shift();
-    if (!d) { cur = null; clearInterval(portTimer); portTimer = null; el.dlg.hidden = true; const g = G(); g.dialogue = false; return; }
-    cur = d; lineIdx = 0;
+    if (!d) { cur = null; document.body.classList.remove('dlg-open'); clearInterval(portTimer); portTimer = null; el.dlg.hidden = true; const g = G(); g.dialogue = false; return; }
+    cur = d; lineIdx = 0; document.body.classList.add('dlg-open');
     const g = G(); g.dialogue = true;
     try { if (RC.game && RC.game.keys) RC.game.keys.clear(); } catch (e) { /* ok */ }
     el.dlgName.textContent = d.speaker || '';
@@ -206,7 +214,7 @@
     return new Promise((resolve) => {
       const lines = d && Array.isArray(d.lines) ? d.lines.filter((l) => l != null) : (d && d.text ? [d.text] : []);
       if (!d || !lines.length) { resolve(); return; }
-      queue.push({ speaker: d.speaker || '', lines, portrait: d.portrait, resolve });
+      queue.push({ speaker: d.speaker || '', lines, portrait: d.portrait, pkey: d.portrait || ((d.speaker || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '')), resolve });
       if (!cur) openNext();
     });
   }
@@ -214,10 +222,12 @@
   const SWALLOW = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS'];
   window.addEventListener('keydown', (e) => {
     if (!cur || !gate()) return;
-    if (ADV.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) advance(); }
+    if (ADV.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) advance(); else held = true; }
     else if (SWALLOW.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
-  el.dlg.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); advance(); });
+  window.addEventListener('keyup', () => { held = false; }, true);
+  el.dlg.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); advance(); held = true; });
+  window.addEventListener('pointerup', () => { held = false; });
   let padPrev = false;
   setInterval(() => {
     if (!navigator.getGamepads) return;
@@ -312,5 +322,20 @@
     }).observe(root, { attributes: true, attributeFilter: ['class'] });
   });
 
-  RC.hud = { setObjective, complete, dialogue, banner, combo };
+  /* cartão do narrador: tarja de cinema, texto grande; resolve ao fim ou ao apertar uma tecla */
+  function card(text, sub, ms) {
+    return new Promise((resolve) => {
+      let c = document.getElementById('card');
+      if (!c) { c = document.createElement('section'); c.id = 'card'; c.className = 'ncard'; c.setAttribute('aria-live', 'polite'); c.innerHTML = '<i class="nc-top"></i><div class="nc-in"><strong></strong><span></span></div><i class="nc-bot"></i>'; document.getElementById('stage').appendChild(c); }
+      c.querySelector('strong').textContent = text || ''; c.querySelector('span').textContent = sub || '';
+      const g = G(); g.dialogue = true; document.body.classList.add('dlg-open');
+      restart(c, 'show');
+      let done = false;
+      const end = () => { if (done) return; done = true; clearTimeout(t); window.removeEventListener('keydown', onKey, true); c.removeEventListener('pointerdown', end); c.classList.remove('show'); document.body.classList.remove('dlg-open'); g.dialogue = false; resolve(); };
+      const onKey = (e) => { if (ADV.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); end(); } };
+      window.addEventListener('keydown', onKey, true); c.addEventListener('pointerdown', end);
+      const t = setTimeout(end, ms || 4200);
+    });
+  }
+  RC.hud = { setObjective, complete, dialogue, banner, combo, card };
 })();
