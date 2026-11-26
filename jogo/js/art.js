@@ -1045,6 +1045,51 @@
     }));
 
     addNewSprites(add);
+    // irmãs: o próprio esquilo CC0 (Sunny Land Woods) com outra paleta e um acessório pequeno — mesmo estilo e animação do Rei
+    {
+      const idle = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => defs.find((d) => d.name === 'idle_' + i));
+      const AN = RC.PLAYER_ANCHORS && RC.PLAYER_ANCHORS.idle;
+      if (idle.every(Boolean) && AN) {
+        for (let i = defs.length - 1; i >= 0; i--) if (/^npc_irma/.test(defs[i].name)) defs.splice(i, 1);
+        const LOOK = {
+          1: { hue: 14, sat: 1.15, lit: 1.12, acc: '#ff5d9e', accD: '#b3266b', kind: 'laco' },      // Mel: pelo cor de mel, laço rosa
+          2: { hue: -8, sat: 0.38, lit: 0.98, acc: '#3fd6e0', accD: '#1b7f8a', kind: 'bandana' }    // Noz: pelo cinza-castanho, bandana ciano
+        };
+        const recolor = (src, k, f) => {
+          const c = cv(src.width, src.height), x = c.getContext('2d'); x.drawImage(src, 0, 0);
+          const im = x.getImageData(0, 0, c.width, c.height), d = im.data;
+          for (let p = 0; p < d.length; p += 4) {
+            if (d[p + 3] < 20) continue;
+            let r = d[p] / 255, g = d[p + 1] / 255, b = d[p + 2] / 255;
+            const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+            if (l < 0.16 || mx - mn < 0.06) continue;                 // contorno, olhos e cinzas ficam como estão
+            let h, s = l > 0.5 ? (mx - mn) / (2 - mx - mn) : (mx - mn) / (mx + mn);
+            if (mx === r) h = ((g - b) / (mx - mn) + 6) % 6; else if (mx === g) h = (b - r) / (mx - mn) + 2; else h = (r - g) / (mx - mn) + 4;
+            h = h * 60;
+            if (h > 60 && h < 300) continue;                         // só tons quentes (pelo); o resto fica
+            h = (h + k.hue + 360) % 360; s = Math.min(1, s * k.sat); const L = Math.min(0.95, l * k.lit);
+            const q = L < 0.5 ? L * (1 + s) : L + s - L * s, pp = 2 * L - q;
+            const hk = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? pp + (q - pp) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? pp + (q - pp) * (2 / 3 - t) * 6 : pp; };
+            d[p] = hk(h / 360 + 1 / 3) * 255; d[p + 1] = hk(h / 360) * 255; d[p + 2] = hk(h / 360 - 1 / 3) * 255;
+          }
+          x.putImageData(im, 0, 0);
+          const [ax, ay] = AN[f];                                      // topo da cabeça neste quadro (medido nos sprites)
+          const px = (xx, yy, col) => { x.fillStyle = col; x.fillRect(xx, yy, 1, 1); };
+          if (k.kind === 'laco') {
+            for (const [dx, dy] of [[-2, 0], [-1, 1], [-2, 2], [1, 0], [0, 1], [1, 2]]) px(ax + dx, ay + dy, k.acc);
+            px(ax - 1, ay + 1, k.accD); px(ax, ay + 1, k.accD);
+          } else {
+            for (let dx = -4; dx <= 3; dx++) { px(ax + dx, ay + 3, k.acc); px(ax + dx, ay + 4, k.accD); }
+            px(ax - 5, ay + 4, k.acc); px(ax - 6, ay + 5, k.accD);
+          }
+          return c;
+        };
+        for (const w of [1, 2]) {
+          for (let i = 0; i < 4; i++) add(`npc_irma${w}_${i + 1}`, recolor(idle[i * 2].src, LOOK[w], i * 2));
+          add(`npc_irma${w}_t1`, recolor(idle[1].src, LOOK[w], 1)); add(`npc_irma${w}_t2`, recolor(idle[3].src, LOOK[w], 3));
+        }
+      }
+    }
     {
       const toC = (im) => { const c = cv(im.width, im.height); c.getContext('2d').drawImage(im, 0, 0); return c; };
       const run4 = defs.find((d) => d.name === 'idle_1'), jmp = defs.find((d) => d.name === 'jump_3');
