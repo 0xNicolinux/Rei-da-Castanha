@@ -39,11 +39,21 @@ uniform sampler2D uAlbedo; uniform sampler2D uNormal;
 uniform vec3 uAmbient; uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uFog;
 uniform int uNL; uniform vec4 uLP[8]; uniform vec3 uLC[8];
 out vec4 o;
+// amostragem "sharp bilinear" (point sampling antialiased): pixels firmes, bordas suavizadas só na transição
+vec2 sharpUV(vec2 uv){
+  vec2 sz = vec2(textureSize(uAlbedo, 0));
+  vec2 px = uv * sz;
+  vec2 box = clamp(fwidth(px), vec2(1e-4), vec2(1.0));
+  vec2 tx = px - 0.5 * box;
+  vec2 off = smoothstep(vec2(1.0) - box, vec2(1.0), fract(tx));
+  return (floor(tx) + 0.5 + off) / sz;
+}
 void main(){
-  vec4 a = texture(uAlbedo, vUV);
+  vec2 suv = sharpUV(vUV);
+  vec4 a = texture(uAlbedo, suv);
   if (a.a < 0.02) discard;
   vec3 alb = pow(a.rgb, vec3(2.2)) * vCol.rgb;
-  vec3 n = texture(uNormal, vUV).xyz * 2.0 - 1.0;
+  vec3 n = texture(uNormal, suv).xyz * 2.0 - 1.0;
   n.x *= vMisc.z; n = normalize(n);
   vec3 lit = uAmbient + uSunCol * max(dot(n, uSunDir), 0.0);
   for (int i = 0; i < 8; i++) {

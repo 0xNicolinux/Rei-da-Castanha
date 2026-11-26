@@ -48,6 +48,9 @@
       foe: 1.15, setpiece: 'arena', climax: ['stones', 'gauntlet', 'gauntlet'], pitLong: true }
   ];
 
+  /* distância mínima entre patrulhas: mais folga nas primeiras fases, mais denso nas últimas */
+  const minEnemySep = (index) => T * Math.max(1.2, 1.6 - 0.1 * Math.min(index, 4));
+
   function generate(seed, index) {
     const rnd = RC.mulberry32((seed * 7919 + index * 104729 + 12345) >>> 0);
     const d = Math.min(1.15, index / 4);
@@ -172,6 +175,12 @@
         col = pcol + pw;
         curTop = newY;
         placed++;
+      }
+      // galhos que se desfazem: ensinados na fase 2 (um por trecho) e cada vez mais comuns depois
+      if (index >= 1 && local.length >= 3 && rnd() < Math.min(0.9, 0.35 + 0.15 * index)) {
+        const cand = local.map((p, i) => i).filter((i) => i > 0 && i < local.length - 1 && local[i].w >= 3 * T);
+        if (cand.length) local[pick(cand)].crumble = true;
+        if (index >= 3 && cand.length > 2) local[cand[cand.length - 1]].crumble = true;
       }
       platforms.push(...local.map((p) => Object.assign(p, { kind: 'branch' })));
       if (opts.long) landmarks.push({ type: 'chasm', x: (start + (col - start) / 2) * T, y: gy(gr), w: (col - start) * T });
@@ -366,6 +375,7 @@
       return t;
     }
     let lastKind = 'flat';
+    const kinds = [];
     function runKind(kind) {
       const intro = phase === 'intro';
       if (kind === 'flat') segFlat(rr(5, 9));
@@ -377,13 +387,13 @@
       else if (kind === 'tower') segTower({ noEnemy: intro });
       else if (kind === 'yard') segYard();
       else if (kind === 'gauntlet') segGauntlet(2 + Math.round(d * 2));
-      lastKind = kind;
+      lastKind = kind; kinds.push(kind);
     }
     function wander(untilCol) {
       let guard = 0;
       while (ground.length < untilCol && guard++ < 200) {
         if (ground.length - lastCheck > 40) { segCheckpoint(); lastKind = 'flat'; continue; }
-        const table = weightsTable().filter(([k, w]) => w > 0 && !((k === 'pit' || k === 'stones') && (lastKind === 'pit' || lastKind === 'stones')));
+        const table = weightsTable().filter(([k, w]) => w > 0 && !((k === 'pit' || k === 'stones') && (lastKind === 'pit' || lastKind === 'stones')) && !(k === lastKind && k !== 'flat') && !(k === 'flat' && lastKind === 'flat' && kinds.length > 1 && kinds[kinds.length - 2] === 'flat'));
         let total = 0; for (const [, w] of table) total += w;
         let r = rnd() * total, kind = 'flat';
         for (const [k, w] of table) { if ((r -= w) <= 0) { kind = k; break; } }
@@ -420,7 +430,7 @@
     phase = 'develop';
     zone('desenvolvimento', () => wander(Math.round(targetCols * 0.42)));
     phase = 'setpiece';
-    zone('setpiece', () => { segFlat(4, { noEnemy: true }); setPiece(sig.setpiece); segFlat(3, { noEnemy: true }); });
+    zone('setpiece', () => { segFlat(4, { noEnemy: true }); setPiece(sig.setpiece); kinds.push('set:' + sig.setpiece); segFlat(3, { noEnemy: true }); });
     phase = 'breather';
     zone('respiro', () => segCheckpoint('shrine'));
     phase = 'develop';
@@ -429,7 +439,7 @@
     zone('respiro', () => { segFlat(3, { noEnemy: true }); segCheckpoint('shrine'); });
     phase = 'climax';
     zone('climax', () => {
-      for (const k of sig.climax) { segFlat(rr(3, 5), { noEnemy: true }); climaxPiece(k); if (lastKind === 'pit' || k === 'pit') segFlat(2, { noEnemy: true }); }
+      for (const k of sig.climax) { segFlat(rr(3, 5), { noEnemy: true }); climaxPiece(k); kinds.push('end:' + k); if (lastKind === 'pit' || k === 'pit') segFlat(2, { noEnemy: true }); }
     });
     // final: terreno plano e área do caminhão
     if (gr !== 13) { gr = gr < 13 ? gr + 1 : gr - 1; }
@@ -455,12 +465,16 @@
     const nearCp = (l, r) => checkpoints.some((c) => c.x > l - 5 * T && c.x < r + 5 * T);
     const inBad = (l, r) => badZones.some((z) => l < z.x1 && r > z.x0);
     const accepted = [];
-    const overlaps = (l, r, gap) => accepted.some((e) => l < e.right + gap && r > e.left - gap);
+    const minSep = minEnemySep(index);
+    const overlaps = (l, r, gap) => { gap = Math.max(gap, minSep); return accepted.some((e) => l < e.right + gap && r > e.left - gap); };
     function fit(e, isKey) {
       const c = Math.floor(((e.left + e.right) / 2) / T);
       if (c < 0 || c >= cols || ground[c] < 0 || ground[c] * T !== e.y) return null;
       const [a, b] = runOf(c);
-      const l = Math.max(e.left, (a + 2) * T), r = Math.min(e.right, (b - 1) * T);
+      // pouso cego (vindo de fosso ou degrau) pede mais respiro; beira de salto (fosso/degrau adiante) também
+      const blindIn = a > 0 && (ground[a - 1] < 0 || ground[a - 1] > ground[a]);
+      const edgeOut = b < cols - 1 && (ground[b + 1] < 0 || ground[b + 1] < ground[b]);
+      const l = Math.max(e.left, (a + (blindIn && b - a >= 9 ? 3 : 2)) * T), r = Math.min(e.right, (b - (edgeOut ? 2 : 1)) * T);
       if (r - l < 3 * T) return null;
       if (nearStartGoal(l, r) || nearCp(l, r)) return null;
       if (!isKey && inBad(l, r)) return null;
@@ -491,7 +505,9 @@
           if (accepted.length >= want) break;
           if (b - a + 1 < (gap < 2 ? 7 : 9)) continue;
           for (let tries = 0; tries < 10 && accepted.length < want; tries++) {
-            const innerL = a + 2, innerR = b - 1;      // colunas [innerL, innerR)
+            const innerL = a + ((b - a >= 9 && a > 0 && (ground[a - 1] < 0 || ground[a - 1] > ground[a])) ? 3 : 2);
+            const innerR = b - ((b < cols - 1 && (ground[b + 1] < 0 || ground[b + 1] < ground[b])) ? 2 : 1);      // colunas [innerL, innerR)
+            if (innerR - innerL < 3) continue;
             const w = Math.min(innerR - innerL, rr(gap < 2 ? 3 : 4, 6));
             const c0 = innerL + Math.floor(rnd() * (innerR - innerL - w + 1));
             const e = mkEnemy(c0, c0 + w, ground[a] * T, undefined, false);
@@ -511,7 +527,7 @@
     const platClear = (x0, x1, yTop, yBot) => !platforms.some((p) => p.x < x1 && p.x + p.w > x0 && p.y > yTop && p.y < yBot);
     const enemyNear = (x0, x1) => enemies.some((e) => e.left < x1 + 2 * T && e.right > x0 - 2 * T);
     const cpNear = (x0, x1) => checkpoints.some((c) => c.x > x0 - 3 * T && c.x < x1 + 3 * T);
-    const freeSpot = (x0, x1) => !enemyNear(x0, x1) && !cpNear(x0, x1) && x0 > start0.x + 8 * T && x1 < goal.x - 8 * T
+    const freeSpot = (x0, x1) => !enemyNear(x0, x1) && !cpNear(x0, x1) && (x1 < start0.x + 8 * T || x0 > start0.x + 12 * T) && x0 > start0.x + 2 * T && x1 < goal.x - 8 * T
       && !props.some((q) => q.x > x0 - 2 * T && q.x < x1 + 2 * T);
     const runs = [];
     for (let c = 0; c < cols;) { if (ground[c] < 0) { c++; continue; } const [ra, rb] = runOf(c); runs.push([ra, rb]); c = rb + 1; }
@@ -567,6 +583,37 @@
       if (!bad) for (let j = 0; j < i; j++) if (Math.abs(nuts[j].x - n.x) < 14 && Math.abs(nuts[j].y - n.y) < 14) { bad = true; break; }
       if (bad) nuts.splice(i, 1);
     }
+    // acorns: nada sobre lampiões, caminhão ou à beira de uma mola; solitários comuns viram trilha ou somem
+    const nearLamp = (n) => checkpoints.some((c) => Math.abs(c.x - n.x) < 22 && n.y > c.y - 80) || (Math.abs(goal.x - n.x) < 70 && n.y > goal.y - 100);
+    for (let i = nuts.length - 1; i >= 0; i--) if (nearLamp(nuts[i])) nuts.splice(i, 1);
+    for (let i = nuts.length - 1; i >= 0; i--) {
+      const n = nuts[i];
+      if (n.golden) continue;
+      if (!nuts.some((o, j) => j !== i && Math.hypot(o.x - n.x, o.y - n.y) < 80)) nuts.splice(i, 1);
+    }
+    // lanternas penduradas não podem tocar acorns nem inimigos
+    for (let i = lanterns.length - 1; i >= 0; i--) {
+      const l = lanterns[i];
+      if (nuts.some((n) => Math.abs(n.x - l.x) < 22 && n.y > l.y - 6 && n.y < l.y + l.len + 24)
+        || enemies.some((e) => l.x > e.left - 20 && l.x < e.right + 20 && l.y + l.len + 24 > e.y - 40)) lanterns.splice(i, 1);
+    }
+    // ---- passe final de posicionamento: ajusta ou remove o que ficou mal colocado ----
+    {
+      const tmp = { cols, ground, platforms, enemies, props, checkpoints, goal, start: { x: spawnCol * T, y: gy(13) }, nuts, lanterns, index };
+      const blockedAbove = (x0, x1, y, h) => platforms.some((p) => p.x < x1 && p.x + p.w > x0 && p.y > y - h && p.y < y);
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        if (blockedAbove(e.left - 14, e.right + 14, e.y, 44)) enemies.splice(i, 1);   // sem teto baixo: dá para pisar
+      }
+      for (let i = props.length - 1; i >= 0; i--) {
+        const q = props[i];
+        if (!propIsSane(tmp, q, props)) {
+          if (q.type === 'spring') { tmp.bad = (tmp.bad || []).concat('mola mal posicionada'); continue; }
+          props.splice(i, 1);
+        }
+      }
+      reachNutsFix(tmp);
+    }
     const val = (n) => (n.golden ? 3 : 1);
     const total = nuts.reduce((s, n) => s + val(n), 0);
     const mainTotal = nuts.reduce((s, n) => s + (n.opt ? 0 : val(n)), 0);
@@ -575,9 +622,64 @@
       cols, width: cols * T, ground, platforms, nuts, enemies, checkpoints,
       start: { x: spawnCol * T, y: gy(13) }, goal, total,
       required: Math.min(Math.ceil(total * 0.5), Math.floor(mainTotal * 0.85)),
-      props, lanterns, zones, landmarks, secrets, profile: { sig: sig.id, difficulty: +d.toFixed(2), setpiece: sig.setpiece }
+      props, lanterns, zones, landmarks, secrets, kinds, profile: { sig: sig.id, difficulty: +d.toFixed(2), setpiece: sig.setpiece }
     };
     return level;
+  }
+
+  /* ---------- validador de posicionamento ---------- */
+  const NPC_ZONE = [8 * T - 16, 12 * T + 16];       // NPC de abertura: start.x + 8..12 tiles
+  function propIsSane(lv, q, props) {
+    const row = lv.ground[Math.floor(q.x / T)];
+    if (row === undefined || row < 0 || row * T !== q.y) return false;
+    // pegada de 32px totalmente apoiada, e uma coluna de folga antes de qualquer fosso/degrau
+    for (let dx = -T; dx <= T; dx += 16) { const c = Math.floor((q.x + dx) / T); if (lv.ground[c] !== row) return false; }
+    if (lv.platforms.some((p) => p.x < q.x + 26 && p.x + p.w > q.x - 26 && p.y > q.y - 70 && p.y < q.y)) return false;
+    if (lv.enemies.some((e) => q.x > e.left - T && q.x < e.right + T)) return false;
+    if (lv.checkpoints.some((c) => Math.abs(c.x - q.x) < 3 * T)) return false;
+    if (q.x > lv.start.x + NPC_ZONE[0] - 32 && q.x < lv.start.x + NPC_ZONE[1] + 32 && q.x < lv.start.x + 20 * T) return false;
+    if (q.x < lv.start.x + 2 * T || Math.abs(q.x - lv.goal.x) < 8 * T) return false;
+    if (props.some((o) => o !== q && Math.abs(o.x - q.x) < 2 * T)) return false;
+    return true;
+  }
+  function nutReach(lv) {
+    const S = surfacesOf(lv); if (!S.length) return () => true;
+    const rise = (a, b) => a.y - b.y;
+    const reach = (a, b) => { const r = rise(a, b); if (r > 108) return false; const gap = Math.max(0, b.x0 - a.x1, a.x0 - b.x1); return gap <= (gap === 0 ? 1e9 : hardGap(r)); };
+    const startS = S.find((s) => lv.start.x >= s.x0 && lv.start.x < s.x1 && s.kind === 'ground');
+    const seen = new Set(startS ? [startS] : []); const q = startS ? [startS] : [];
+    while (q.length) { const a = q.shift(); for (const b of S) if (!seen.has(b) && reach(a, b)) { seen.add(b); q.push(b); } }
+    // plataformas bônus (mola) contam como alcançáveis pela mola
+    const extra = (lv.platforms || []).filter((p) => p.bonus).map((p) => ({ x0: p.x, x1: p.x + p.w, y: p.y }));
+    const R = [...seen].map((s) => ({ x0: s.x0, x1: s.x1, y: s.y })).concat(extra);
+    return (n) => R.some((s) => {
+      const dxs = Math.max(0, s.x0 - n.x, n.x - s.x1);
+      return dxs <= 150 && s.y - n.y <= APEX + 34 && n.y - s.y < 300;
+    });
+  }
+  function reachNutsFix(lv) {
+    const ok = nutReach(lv);
+    for (let i = lv.nuts.length - 1; i >= 0; i--) if (!ok(lv.nuts[i])) lv.nuts.splice(i, 1);
+  }
+  /* Lista de avisos de posicionamento (usada por testes, por validate() e pelo overlay ?debug=1). */
+  function placementIssues(lv) {
+    const out = [], T2 = T, push = (kind, x, y, msg) => out.push({ kind, x, y, msg });
+    const sep = minEnemySep(lv.index || 0);
+    const runOf = (c) => { let a = c, b = c; while (a > 0 && lv.ground[a - 1] === lv.ground[c]) a--; while (b < lv.cols - 1 && lv.ground[b + 1] === lv.ground[c]) b++; return [a, b]; };
+    lv.enemies.forEach((e, i) => {
+      const c0 = Math.floor(e.left / T2), c1 = Math.floor(e.right / T2);
+      for (let c = c0; c <= c1; c++) if (lv.ground[c] !== e.y / T2) { push('enemy', e.left, e.y, 'patrulha fora do chão plano'); break; }
+      const [a, b] = runOf(Math.max(0, Math.min(lv.cols - 1, Math.floor((e.left + e.right) / 2 / T2))));
+      if (b - a + 1 < 6) push('enemy', e.left, e.y, 'beirada curta (2 tiles)');
+      if (b - a >= 9 && a > 0 && (lv.ground[a - 1] < 0 || lv.ground[a - 1] > lv.ground[a]) && e.left < (a + 3) * T2 - 1) push('enemy', e.left, e.y, 'pouso cego');
+      if (b < lv.cols - 1 && (lv.ground[b + 1] < 0 || lv.ground[b + 1] < lv.ground[b]) && e.right > (b - 2) * T2 + 1) push('enemy', e.right, e.y, 'beira de salto');
+      if (lv.platforms.some((p) => p.x < e.right + 14 && p.x + p.w > e.left - 14 && p.y > e.y - 44 && p.y < e.y)) push('enemy', e.left, e.y, 'sem folga para pisar');
+      for (let j = 0; j < i; j++) { const o = lv.enemies[j]; if (e.left < o.right + sep - 1 && e.right > o.left - sep + 1) push('enemy', e.left, e.y, 'espaçamento curto'); }
+    });
+    lv.props.forEach((q) => { if (!propIsSane(lv, q, lv.props)) push('prop', q.x, q.y, q.type + ' mal apoiado/obstruído'); });
+    const ok = nutReach(lv);
+    lv.nuts.forEach((n) => { if (!ok(n)) push('nut', n.x, n.y, 'castanha inalcançável'); });
+    return out;
   }
 
   /* ---------- validação ---------- */
@@ -635,6 +737,7 @@
       for (let c = c0; c <= c1; c++) if (level.ground[c] !== e.y / T) { errs.push(`inimigo sem chão x=${e.left}`); break; }
     }
     for (const p of level.platforms) if (p.y < 148 || p.y > 460) errs.push(`plataforma fora da faixa y=${p.y}`);
+    for (const w of placementIssues(level)) errs.push(`posicionamento ${w.kind}: ${w.msg} x=${Math.round(w.x)}`);
     return { ok: errs.length === 0, errs };
   }
 
@@ -649,6 +752,6 @@
     throw new Error('Não foi possível gerar fase válida: ' + (lastErr && lastErr[0]));
   }
 
-  RC.LevelGen = { T, ROW_MIN, ROW_MAX, WORLD_H, NAMES, build, generate, validate, surfacesOf, designGap, hardGap };
+  RC.LevelGen = { T, ROW_MIN, ROW_MAX, WORLD_H, NAMES, build, generate, validate, surfacesOf, designGap, hardGap, placementIssues, minEnemySep };
   if (typeof module !== 'undefined') module.exports = RC.LevelGen;
 })(typeof window !== 'undefined' ? window : globalThis);

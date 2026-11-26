@@ -166,7 +166,7 @@
       const albedo = cv(w, TH);
       albedo.getContext('2d').putImageData(new ImageData(img, w, TH), 0, 0);
       const normal = RC.normalFromHeight(H, w, TH, A, 0.9);
-      chunks.push({ x0: x0 * 2, w: w * 2, set: r.texSet(albedo, normal), texW: w, texH: TH });
+      chunks.push({ x0: x0 * 2, w: w * 2, set: r.texSet(albedo, normal, { linear: true }), texW: w, texH: TH });
     }
     return chunks;
   };
@@ -237,7 +237,7 @@
     const ac = A.getContext('2d'), nc = N.getContext('2d');
     nc.fillStyle = 'rgb(128,128,255)'; nc.fillRect(0, 0, size, hTot);
     for (const it of items) { ac.drawImage(it.c, it.x, it.y); nc.clearRect(it.x, it.y, it.W, it.Hh); nc.drawImage(it.n, it.x, it.y); }
-    return { set: r.texSet(A, N), items, topTexel: 17 - 7.2 };
+    return { set: r.texSet(A, N, { linear: true }), items, topTexel: 17 - 7.2 };
   };
 
   /* ---------------------------------------------------------- FUNDOS PINTADOS */

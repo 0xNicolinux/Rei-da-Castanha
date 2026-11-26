@@ -915,6 +915,72 @@
 
 
   /* ======================= CARREGAMENTO + ATLAS ======================= */
+
+  /* ---------- planar (glide) e mergulho (pancada): derivados dos quadros de corrida/bola ---------- */
+  function palOf(src) {
+    const d = src.getContext('2d').getImageData(0, 0, src.width, src.height).data, m = {};
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200) { const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]; m[k] = (m[k] || 0) + 1; }
+    const lum = (k) => ((k >> 16) & 255) * 0.3 + ((k >> 8) & 255) * 0.59 + (k & 255) * 0.11;
+    const top = Object.keys(m).map(Number).sort((a, b) => m[b] - m[a]).slice(0, 7).sort((a, b) => lum(a) - lum(b));
+    const hex = (k) => '#' + k.toString(16).padStart(6, '0');
+    return top.map(hex);
+  }
+  function makeGlideFrames(run) {
+    const out = '#2a1008', dk = '#8a3a12', md = '#b8561a', lt = '#dc7626', hi = '#f4a455';
+    const frames = [];
+    const P = [{ ang: 0.72, rx: 16, ry: 12, arm: 0, leg: 0 }, { ang: 0.92, rx: 15, ry: 13, arm: -1, leg: 1 }, { ang: 0.8, rx: 15.5, ry: 12.4, arm: 1, leg: -1 }, { ang: 0.62, rx: 16.5, ry: 11.5, arm: 0, leg: 1 }];
+    P.forEach((q, fi) => {
+      const c = cv(90, 58), g = c.getContext('2d');
+      // cauda: leque felpudo em arco (de pára-quedas) saindo do quadril
+      const ca = Math.cos(q.ang), sa = Math.sin(q.ang), cx = 38 - q.rx * ca, cy = 34 - q.rx * sa;
+      const img = g.createImageData(90, 58);
+      for (let y = 0; y < 58; y++) for (let x = 0; x < 90; x++) {
+        const dx = x - cx, dy = y - cy;
+        const u = (dx * ca + dy * sa) / q.rx, v = (-dx * sa + dy * ca) / q.ry;
+        // formato de folha: afunila na raiz (u>0 = lado do corpo)
+        const w = 1 - Math.max(0, u) * 0.6;
+        const r = Math.sqrt(u * u + (v / Math.max(0.35, w)) * (v / Math.max(0.35, w)));
+        if (r > 1) continue;
+        let col = md;
+        if (r > 0.86) col = out; else if (r > 0.7) col = dk;
+        else {
+          const band = Math.floor((u + 1) * 5.5 + Math.sin(v * 2.2 + fi) * 0.6);
+          if (v < -0.25 && r < 0.6) col = lt;
+          if (band % 3 === 0 && r < 0.64) col = dk;
+          if (v < -0.55 && r < 0.62 && band % 3 !== 0) col = hi;
+        }
+        const k = (y * 90 + x) * 4, rgb = parseInt(col.slice(1), 16);
+        img.data[k] = rgb >> 16; img.data[k + 1] = (rgb >> 8) & 255; img.data[k + 2] = rgb & 255; img.data[k + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      // corpo e cabeça do quadro de corrida (sem a cauda original)
+      g.drawImage(run, 38, 0, 52, 58, 38, 0, 52, 58);
+      // membros abertos: braço à frente/cima e perna esticada atrás
+      const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
+      const limb = (x0, y0, dxn, dyn, len, col) => { for (let i = 0; i < len; i++) { px(x0 + i * dxn, y0 + Math.round(i * dyn), out); px(x0 + i * dxn, y0 + Math.round(i * dyn) + 1, col); } };
+      limb(57, 44 + q.arm, 1, 0.1, 6, md);
+      limb(51, 45, 1, 0.05, 5, dk);
+      limb(46, 44 + q.leg, -1, 0.35, 7, md);
+      limb(49, 45, -1, 0.15, 5, dk);
+      frames.push(c);
+    });
+    return frames;
+  }
+  function makePoundFrame(ball) {
+    const c = cv(90, 84), g = c.getContext('2d');
+    // rastros de velocidade acima da bola
+    for (let i = 0; i < 7; i++) {
+      const x = 22 + i * 7 + (i % 2) * 2, len = 12 + (i % 3) * 7;
+      for (let y = 0; y < len; y++) {
+        const a = 0.18 + 0.55 * (1 - y / len);
+        g.fillStyle = `rgba(255,${226 - y * 2},150,${a})`; g.fillRect(x, 26 - len + y + (i % 2) * 3, 2, 1);
+      }
+    }
+    g.drawImage(ball, 0, 26);
+    return c;
+  }
+  RC.makeGlideFrames = makeGlideFrames; RC.makePoundFrame = makePoundFrame;
+
   function loadImg(src) {
     return new Promise((res, rej) => {
       const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Falha ao carregar ' + src)); i.src = src;
@@ -939,6 +1005,12 @@
     }));
 
     addNewSprites(add);
+    {
+      const toC = (im) => { const c = cv(im.width, im.height); c.getContext('2d').drawImage(im, 0, 0); return c; };
+      const run4 = defs.find((d) => d.name === 'run_4'), jmp = defs.find((d) => d.name === 'jump_3');
+      if (run4) makeGlideFrames(toC(run4.src)).forEach((c, i) => add('glide_' + (i + 1), c));
+      if (jmp) add('pound_1', makePoundFrame(toC(jmp.src)));
+    }
     const M = RC.MOODS;
     add('crown', makeCrown());
     add('lantern_off', makeLantern(false)); add('lantern_on', makeLantern(true)); add('post', makePost());
@@ -984,6 +1056,6 @@
       rects[d.name] = { x: cx, y: cy, w, h };
       cx += w + 1; rowH = Math.max(rowH, h);
     }
-    return { set: r.texSet(A, N), rects, size, albedo: A };
+    return { set: r.texSet(A, N, { linear: true }), rects, size, albedo: A };
   };
 })();

@@ -112,6 +112,55 @@
     return out + '</svg>';
   }
 
+  /* retratos com os sprites reais do atlas (recorte do busto, animado com quadros de fala) */
+  let portTimer = null;
+  const bboxCache = {};
+  function spritePortrait(key) {
+    const info = RC.atlasInfo; if (!info || !info.albedo) return null;
+    const R = info.rects, A = RC.PLAYER_ANCHORS;
+    const W = key === 'irma1' ? 1 : 2;
+    let idle, talk, crownAt = null;
+    if (key === 'rei') { idle = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => 'idle_' + i); talk = idle; crownAt = A && A.idle; }
+    else if (key === 'irma1' || key === 'irma2') { idle = [1, 2, 3, 4].map((i) => `npc_irma${W}_${i}`); talk = [`npc_irma${W}_t1`, `npc_irma${W}_t2`]; }
+    else if (key === 'texugo' || key === 'corvo') { idle = [1, 2, 3, 4].map((i) => `npc_${key}_${i}`); talk = [`npc_${key}_t1`, `npc_${key}_t2`]; }
+    else if (key === 'boss' || key === 'barao') { idle = ['boss_idle_1', 'boss_idle_2', 'boss_idle_3'].filter((n) => R[n]); talk = idle; }
+    else return null;
+    idle = idle.filter((n) => R[n]); talk = talk.filter((n) => R[n]);
+    if (!idle.length) return null; if (!talk.length) talk = idle;
+    const bb = (n) => {
+      if (bboxCache[n]) return bboxCache[n];
+      const r = R[n], d = info.albedo.getContext('2d').getImageData(r.x, r.y, r.w, r.h).data;
+      let x0 = r.w, y0 = r.h, x1 = 0, y1 = 0;
+      for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (d[(y * r.w + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      return (bboxCache[n] = { x0, y0, x1, y1 });
+    };
+    const all = idle.concat(talk);
+    let ux0 = 999, uy0 = 999, ux1 = 0, uy1 = 0;
+    for (const n of all) { const b = bb(n); ux0 = Math.min(ux0, b.x0); uy0 = Math.min(uy0, b.y0); ux1 = Math.max(ux1, b.x1); uy1 = Math.max(uy1, b.y1); }
+    const crown = R.crown;
+    if (crownAt && crown) uy0 = Math.min(uy0, Math.min.apply(null, crownAt.map((a) => a[1])) - crown.h + 3);
+    const bw = ux1 - ux0 + 1, bh = Math.round((uy1 - uy0 + 1) * (key === 'boss' || key === 'barao' ? 0.8 : 0.74));
+    const side = Math.max(bw, bh) + 4;
+    const cvs = document.createElement('canvas'); cvs.width = side; cvs.height = side;
+    const g = cvs.getContext('2d'); g.imageSmoothingEnabled = false;
+    return { cvs, frame(t, talking) {
+      const list = talking ? talk : idle, i = Math.floor(t * (talking ? 7 : 5)) % list.length, n = list[i], r = R[n];
+      g.clearRect(0, 0, side, side);
+      const ox = Math.round((side - bw) / 2) - ux0, oy = 2 - uy0 + (talking ? Math.round(Math.sin(t * 14)) : 0);
+      g.drawImage(info.albedo, r.x, r.y, r.w, r.h, ox, oy, r.w, r.h);
+      if (crownAt && crown) { const a = crownAt[Math.floor(t * 5) % crownAt.length]; g.drawImage(info.albedo, crown.x, crown.y, crown.w, crown.h, ox + Math.round(a[0] - crown.w / 2), oy + a[1] - crown.h + 3, crown.w, crown.h); }
+    } };
+  }
+  function showPortrait(key, speaker, d) {
+    clearInterval(portTimer); portTimer = null;
+    let sp = null; try { sp = spritePortrait(key); } catch (e) { sp = null; }
+    if (!sp) { el.dlgPortrait.innerHTML = portraitSvg(PORTRAITS[key] ? key : d.portrait, speaker); return; }
+    el.dlgPortrait.innerHTML = ''; sp.cvs.className = 'dlg-sprite'; el.dlgPortrait.appendChild(sp.cvs);
+    const t0 = performance.now();
+    const draw = () => sp.frame((performance.now() - t0) / 1000, !!typing);
+    draw(); portTimer = setInterval(draw, 100);
+  }
+
   /* ------------------------------------------------------------ diálogo */
   const queue = [];
   let cur = null, lineIdx = 0, typing = null, shown = '';
@@ -133,14 +182,13 @@
   }
   function openNext() {
     const d = queue.shift();
-    if (!d) { cur = null; el.dlg.hidden = true; const g = G(); g.dialogue = false; return; }
+    if (!d) { cur = null; clearInterval(portTimer); portTimer = null; el.dlg.hidden = true; const g = G(); g.dialogue = false; return; }
     cur = d; lineIdx = 0;
     const g = G(); g.dialogue = true;
     try { if (RC.game && RC.game.keys) RC.game.keys.clear(); } catch (e) { /* ok */ }
     el.dlgName.textContent = d.speaker || '';
     const key = d.portrait || ((d.speaker || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, ''));
-    const svg = portraitSvg(PORTRAITS[key] ? key : d.portrait, d.speaker);
-    el.dlgPortrait.innerHTML = svg;
+    showPortrait(key, d.speaker, d);
     el.dlgPortrait.hidden = false;
     el.dlg.hidden = false;
     el.dlg.style.visibility = '';

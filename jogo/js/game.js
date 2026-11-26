@@ -130,7 +130,7 @@
     const lv = G.lv;
     let best = groundTop(Math.floor(x / T));
     if (best > 1e8) best = 1e9;
-    for (const p of lv.platforms) if (x > p.x && x < p.x + p.w && p.y >= y - 2 && p.y < best) best = p.y;
+    for (const p of lv.platforms) if (!p.off && x > p.x && x < p.x + p.w && p.y >= y - 2 && p.y < best) best = p.y;
     return best;
   }
 
@@ -337,7 +337,10 @@
       let land = null;
       if (bottom >= top && prevBottom <= top + 7) land = top;
       for (const p of lv.platforms) {
-        if (player.x + player.w > p.x + 3 && player.x < p.x + p.w - 3 && prevBottom <= p.y + 5 && bottom >= p.y && (land === null || p.y < land)) land = p.y;
+        if (!p.off && player.x + player.w > p.x + 3 && player.x < p.x + p.w - 3 && prevBottom <= p.y + 5 && bottom >= p.y && (land === null || p.y < land)) {
+          land = p.y;
+          if (p.crumble && !(p.cT > 0)) { p.cT = 0.5; sfx('land', 0.15, 0.6); burst('dust', player.x + player.w / 2, p.y, 4, 70, { col: [0.5, 0.35, 0.2], life: 0.5 }); }
+        }
       }
       if (land !== null) {
         player.y = land - player.h;
@@ -405,6 +408,10 @@
     e.dead = true; G.kills++; G.totalKills++; sfx('kill', 0.36);
     EV.emit('enemyKilled', e, player.atk > 0 ? 'punch' : 'stomp');
     burst('spark', ex, ey, 14, 240, { col: [1, 0.85, 0.4], life: 0.5 });
+    burst('dust', ex, ey + 4, 9, 150, { life: 0.7, size: 1.8, drag: 2.5 });   // fumaça
+    burst('spark', ex, ey, 10, 380, { col: [1, 0.5, 0.2], life: 0.35, size: 0.9 });      // faíscas de explosão
+    burst('leaf', ex, ey, 5, 260, { name: 'crate_piece_' + (1 + Math.floor(Math.random() * 3)), g: 900, vr: 14, life: 0.9 });                // estilhaços
+    G.shake = Math.max(G.shake, 4); G.flash = Math.max(G.flash, 0.06);
     // inimigo derrotado solta uma castanha
     G.nuts.push({ x: ex, y: ey - 6, golden: false, taken: false, ph: 0, mag: true, vy: -220, drop: true });
   }
@@ -536,8 +543,8 @@
   function startFinish() {
     EV.emit('finish', G.stage);
     player.finishing = true; player.invuln = 99; G.fadeTarget = 1;
-    if (AU) AU.sting('fanfare'); toast('Caminhão liberado!', 1200);
-    burst('spark', G.lv.goal.x + 60, G.lv.goal.y - 60, 24, 300, { col: [1, 0.85, 0.4], life: 0.9 });
+    if (AU) AU.sting('fanfare'); if (RC.hud && RC.hud.banner) RC.hud.banner('FASE CONCLUÍDA!', 'o caminhão é todo seu'); else toast('Caminhão liberado!', 1200);
+    burst('spark', G.lv.goal.x + 60, G.lv.goal.y - 60, 48, 380, { col: [1, 0.85, 0.4], life: 0.9 });
   }
   function finishStage() {
     if (G.state !== 'playing') return;
@@ -660,7 +667,12 @@
     {
       const g = lv.goal, tr = rc.truck;
       if (g.x > cam - 200 && g.x < cam + WW + 200) {
-        spr('truck', g.x - 6, g.y - tr.h * S + 4, S, S, { emit: 0.02 });
+        const dark = [0, 0.1, 0.3, 0.55, 0.45][G.lv.mood] || 0.3;           // fases escuras pedem mais luz de preenchimento
+        R.setBlend('add');
+        R.sprite(set, rc.glow, g.x + tr.w * S * 0.5 - 150, g.y - 90, 300 / 64, 110 / 64, { col: [1, 0.78, 0.45, 0.16 + dark * 0.2], lit: 0, noSnap: true, emit: 0 });
+        R.setBlend('alpha');
+        const k = 1.35 + dark * 0.5;
+        spr('truck', g.x - 6, g.y - tr.h * S + 4, S, S, { emit: 0.28 + dark * 0.35, col: [k, k * 0.97, k * 0.92] });
         const open = G.collected >= lv.required;
         const pul = 0.5 + 0.5 * Math.sin(t * 4);
         const big = tr.w > 100, hx = big ? g.x + 216 : g.x + 146, hy = big ? g.y - 58 : g.y - 30;   // farol
@@ -684,9 +696,11 @@
       const cx = e.x + e.w / 2, fy = e.y + e.h;
       if (e.dead) {
         if (e.def.drawDead && e.def.drawDead(e, t, API)) continue;   // mortes próprias dos tipos novos (js/enemies.js)
-        if (e.deadT > 0.5) continue;
-        const fr = 'death_' + (1 + Math.min(3, Math.floor(e.deadT / 0.12)));
-        spr(fr, cx - 14 * S, fy - 26 * S + 4, S, S, { col: [1, 1, 1, 1 - e.deadT * 1.6] });
+        if (e.deadT > 0.95) continue;
+        // morte à Metal Slug: clarão branco, pulinho exagerado, giro e queda
+        const tt = e.deadT, fr = 'death_' + (1 + Math.min(3, Math.floor(tt / 0.1)));
+        const dy = -(300 * tt - 760 * tt * tt), w = tt < 0.09 ? 2.8 : 1, al = tt > 0.55 ? 1 - (tt - 0.55) / 0.4 : 1;
+        spr(fr, cx - 14 * S, fy - 26 * S + 4 + dy, S * (1 + Math.max(0, 0.25 - tt)), S * (1 + Math.max(0, 0.25 - tt)), { col: [w, w, w, al], rot: tt * 11 * (e.dir || 1), px: 14 * S, py: 13 * S });
         continue;
       }
       if (e.def.draw) { e.def.draw(e, t, API); continue; }
@@ -700,7 +714,8 @@
       const r0 = rc[name];
       blob(cx, e.air ? e.floorY : fy, 22, 0.32);
       const offX = flip < 0 ? (r0.w - ax) * S : ax * S;
-      spr(name, cx - offX, fy - ay * S, flip * S, S, { col: [dim, dim, dim, 1] });
+      const hf = e.stun > 0.36 ? 2.6 : dim;      // 1-2 quadros de clarão branco ao tomar o golpe
+      spr(name, cx - offX, fy - ay * S, flip * S, S, { col: [hf, hf, hf, 1] });
     }
 
     // jogador
@@ -721,10 +736,11 @@
   function drawPlayer(t, blob) {
     if (player.dead && G.state === 'over') return;
     const set = atlas.set, rc = rects, A = RC.PLAYER_ANCHORS;
+    if (!A.glide) { A.glide = [[54, 30, 0, 'head'], [54, 30, 0, 'head'], [54, 30, 0, 'head'], [54, 30, 0, 'head']]; A.pound = [[43, 53, 0, 'ball']]; }
     let anim, n, rate, fy = 47, ax = 40, ay = 47, cidx;
     if (player.hurtT > 0) { anim = 'hurt'; n = 2; rate = 8; ax = 40; ay = 44; }
-    else if (player.pound) { anim = 'crouch'; n = 1; rate = 1; ax = 40; ay = 47; }
-    else if (player.gliding) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; }
+    else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 53; }
+    else if (player.gliding) { anim = 'glide'; n = 4; rate = 9; ax = 50; ay = 38; }
     else if (!player.grounded) { anim = 'jump'; n = 4; rate = 15; ax = 43; ay = 36; }
     else if (Math.abs(player.vx) > 40 || player.finishing) { anim = 'run'; n = 6; rate = 8 + Math.abs(player.vx) / 28; }
     else { anim = 'idle'; n = 8; rate = 8; }
@@ -752,7 +768,7 @@
     }
     const name = `${anim}_${idx + 1}`, r0 = rc[name];
     const cx = player.x + player.w / 2;
-    const cyAnchor = (anim === 'jump' ? player.y + player.h / 2 : player.y + player.h) + dyOff;
+    const cyAnchor = (anim === 'jump' || anim === 'glide' || anim === 'pound' ? player.y + player.h / 2 : player.y + player.h) + dyOff;
     const sx = player.sx * msx, sy = player.sy * msy;
     const flicker = player.invuln > 0 && player.invuln < 90 && Math.floor(t * 18) % 2 === 0 && player.hurtT <= 0 ? 0.35 : 1;
     // origem do sprite: esquerda/topo conforme espelhamento
@@ -766,7 +782,7 @@
     const hx = f > 0 ? anc[0] : r0.w - anc[0];
     const hxw = left + hx * S * sx, hyw = top + anc[1] * S * sy;
     const crown = rc.crown;
-    const tilt = clamp(player.vx / PH.RUN, -1, 1) * 0.12 * f + (anim === 'jump' ? Math.sin(player.animT * 10) * 0.05 : 0) + dTilt;
+    const tilt = clamp(player.vx / PH.RUN, -1, 1) * 0.12 * f + (anim === 'jump' ? Math.sin(player.animT * 10) * 0.05 : anim === 'glide' ? 0.06 * f * Math.sin(player.animT * 7) : 0) + dTilt;
     R.sprite(set, crown, hxw - (crown.w / 2) * S, hyw - crown.h * S + 3, S, S, { rot: tilt, px: (crown.w / 2) * S, py: crown.h * S - 3, emit: 0.55, col: [1, 1, 1, flicker] });
     G.crownPos = [hxw, hyw];
 
@@ -822,6 +838,35 @@
     }
   }
 
+  /* ?debug=1: hitboxes, patrulhas, plataformas e avisos do validador de posicionamento */
+  const DEBUG = q.get('debug') === '1';
+  let dbgCv = null, dbgLv = null, dbgWarn = [];
+  function drawDebug() {
+    const lv = G.lv; if (!lv) return;
+    const stage = document.getElementById('stage');
+    if (!dbgCv) { dbgCv = document.createElement('canvas'); dbgCv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none'; stage.appendChild(dbgCv); }
+    if (dbgLv !== lv) { dbgLv = lv; dbgWarn = LG.placementIssues(lv); }
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (dbgCv.width !== w) { dbgCv.width = w; dbgCv.height = h; }
+    const c = dbgCv.getContext('2d'), k = w / WW, cam = G.camX;
+    c.clearRect(0, 0, w, h); c.lineWidth = 1.5; c.font = `${Math.max(10, 11 * k)}px monospace`;
+    const X = (x) => (x - cam) * k, Y = (y) => y * k, box = (x, y, bw, bh, col) => { c.strokeStyle = col; c.strokeRect(X(x), Y(y), bw * k, bh * k); };
+    for (const p of lv.platforms) box(p.x, p.y, p.w, 10, p.bonus ? '#ff0' : '#0f8');
+    for (const e of G.enemies) {
+      if (e.dead) continue;
+      box(e.x, e.y, e.w, e.h, '#f33');
+      const L0 = e.pl != null ? e.pl : e.left, R0 = e.pr != null ? e.pr : e.right;
+      if (L0 != null && R0 != null) { c.strokeStyle = 'rgba(255,120,60,.9)'; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(X(L0), Y(e.y + e.h + 4)); c.lineTo(X(R0), Y(e.y + e.h + 4)); c.stroke(); c.setLineDash([]); }
+    }
+    for (const q2 of lv.props) box(q2.x - 16, q2.y - 30, 32, 30, '#6cf');
+    for (const cp of lv.checkpoints) box(cp.x - 12, cp.y - 40, 24, 40, '#fc6');
+    for (const n of G.nuts) if (!n.taken) { c.strokeStyle = n.golden ? '#fd0' : '#9f9'; c.strokeRect(X(n.x - 6), Y(n.y - 6), 12 * k, 12 * k); }
+    box(player.x, player.y, player.w, player.h, '#0ff');
+    c.fillStyle = '#fff'; c.fillText(`debug  avisos do validador: ${dbgWarn.length}  inimigos: ${G.enemies.length}  castanhas: ${lv.nuts.length}`, 8, h - 8);
+    c.fillStyle = '#f0f';
+    for (const w2 of dbgWarn) { c.beginPath(); c.arc(X(w2.x), Y(w2.y - 20), 6 * k, 0, 6.3); c.fill(); c.fillText(w2.msg, X(w2.x) + 8, Y(w2.y - 24)); }
+  }
+
   function render(t) {
     const m = G.mood, lv = G.lv;
     if (!m || !lv) return;
@@ -855,9 +900,10 @@
     // galhos
     const B = G.res.branches;
     lv.platforms.forEach((p, i) => {
-      if (p.x + p.w < cam - 20 || p.x > cam + WW + 20) return;
+      if (p.x + p.w < cam - 20 || p.x > cam + WW + 20 || p.off) return;
       const it = B.items[i];
-      R.sprite(B.set, { x: it.x, y: it.y, w: it.W, h: it.Hh }, p.x - 4 * S, p.y - B.topTexel * S, S, S, { noSnap: false });
+      const jx = p.cT > 0 ? Math.sin(t * 90) * 1.6 : 0, jy = p.cT > 0 ? (0.5 - p.cT) * 3 : 0;
+      R.sprite(B.set, { x: it.x, y: it.y, w: it.W, h: it.Hh }, p.x - 4 * S + jx, p.y - B.topTexel * S + jy, S, S, { noSnap: false, col: p.crumble ? [1.25, 1.05, 0.8] : [1, 1, 1] });
     });
     EV.emit('drawBehind', t, cam);
     drawActors(t);
@@ -929,8 +975,13 @@
     if (G.state !== 'paused') updateParticles(dt);
     G.shake = Math.max(0, G.shake - dt * 28); G.flash = Math.max(0, G.flash - dt * 2.4); G.aberr = Math.max(0, G.aberr - dt * 0.2);
     G.fade += (G.fadeTarget - G.fade) * (1 - Math.exp(-dt * 4));
+    for (const p of G.lv ? G.lv.platforms : []) if (p.crumble) {
+      if (p.cT > 0) { p.cT -= dt; if (p.cT <= 0) { p.off = true; p.offT = 2.8; burst('dust', p.x + p.w / 2, p.y + 6, 10, 110, { col: [0.45, 0.3, 0.18], life: 0.7, size: 1.3 }); burst('leaf', p.x + p.w / 2, p.y, 5, 120, { name: 'leaf_1', g: 500, vr: 6, life: 0.9 }); sfx('kill', 0.2, 0.6); } }
+      else if (p.off) { p.offT -= dt; if (p.offT <= 0) { p.off = false; p.cT = 0; } }
+    }
     if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) ui.toast.classList.remove('show'); }
     if (G.lv) render(G.time);
+    if (DEBUG) drawDebug();
     EV.emit('drawHud', G.time);
   }
 
@@ -1033,7 +1084,7 @@
       qualityIdx = parseInt(q.get('q') || '0', 10) || 0;
       if (qualityIdx) R.resize(QUALITY[Math.min(qualityIdx, QUALITY.length - 1)]);
       atlas = await RC.buildAtlas(R);
-      rects = atlas.rects;
+      rects = atlas.rects; RC.atlasInfo = atlas;
       bg = RC.paintBackgrounds(R, 4242);
     } catch (err) {
       console.error(err);
@@ -1063,6 +1114,6 @@
   };
   RC.game = API;
 
-  window.__rc = { G, player, keys, step: (dt) => updateWorld(dt), groundTop, surfaceBelow, PH, R: () => R, loadStage, startStage, beginRun, togglePause, teleport: (x) => { const y = surfaceBelow(x, 0); spawnPlayer(x, y); G.camX = G.camTarget = clamp(x - WW * 0.4, 0, G.lv.width - WW); } };
+  window.__rc = { atlas: () => atlas, G, player, keys, step: (dt) => updateWorld(dt), groundTop, surfaceBelow, PH, R: () => R, loadStage, startStage, beginRun, togglePause, teleport: (x) => { const y = surfaceBelow(x, 0); spawnPlayer(x, y); G.camX = G.camTarget = clamp(x - WW * 0.4, 0, G.lv.width - WW); } };
   boot();
 })();

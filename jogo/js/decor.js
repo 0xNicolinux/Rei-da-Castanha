@@ -15,7 +15,7 @@
     for (const e of lv.enemies) keepOut.push([e.left - 30, e.right + 30]);
     for (const p of lv.props || []) keepOut.push([p.x - 40, p.x + 40]);
     for (const c of lv.checkpoints) keepOut.push([c.x - 46, c.x + 46]);
-    keepOut.push([lv.goal.x - 60, lv.goal.x + 260], [lv.start.x - 40, lv.start.x + 40]);
+    keepOut.push([lv.start.x + 250, lv.start.x + 350], [lv.goal.x - 60, lv.goal.x + 260], [lv.start.x - 40, lv.start.x + 40]);
     const blocked = (x) => keepOut.some((k) => x > k[0] && x < k[1]);
     const crowded = (x, z, r) => taken.some((t) => t[1] === z && Math.abs(t[0] - x) < r);
     const add = (it, r) => { if (crowded(it.x, it.z, r || 9)) return false; taken.push([it.x, it.z]); out.push(it); return true; };
@@ -32,8 +32,8 @@
       for (let x = x0; x < x1; x += 11) {
         const dens = noise.fbm(x * 0.012, 1.7, 3);
         if (rnd() < 0.16 + dens * 0.78) {
-          const z = (!blocked(x) && rnd() < 0.42) ? 1 : 0;
-          add({ kind: 'tuft', name: tuft(), x: x + rnd() * 8, y: y + 1, ph: rnd() * 6.28, z }, 9);
+          const tx = x + rnd() * 8, z = (!blocked(tx - 6) && !blocked(tx + 6) && rnd() < 0.42) ? 1 : 0;
+          add({ kind: 'tuft', name: tuft(), x: tx, y: y + 1, ph: rnd() * 6.28, z }, 9);
         }
       }
       // flores em canteiros pequenos
@@ -68,6 +68,7 @@
 
     // galhos: tufos na borda superior e gravetos, só dentro da largura do galho
     for (const p of lv.platforms) {
+      if (p.crumble) continue;
       const n = Math.max(1, Math.floor(p.w / 28));
       for (let k = 0; k < n; k++) {
         if (rnd() < 0.35) continue;
