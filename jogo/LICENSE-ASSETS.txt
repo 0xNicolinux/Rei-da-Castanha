@@ -1,0 +1,8 @@
+ARTE E SONS — SUNNY LAND WOODS
+Os sprites (esquilo, inimigos, itens) e os sons em assets/woods/ vêm do pacote Sunny Land Woods, de Luis Zuno (Ansimuz), licenciado em Creative Commons Zero (CC0). Cópia da licença: assets/woods/LICENSE-CC0.pdf. https://opengameart.org/content/sunnyland-woods
+
+GERADO POR CÓDIGO (próprio do projeto)
+Terreno, plataformas de galho, florestas de fundo, céu, coroa, caminhão, partículas e toda a iluminação/shaders são gerados em tempo de execução (js/world.js, js/art.js, js/gl.js).
+
+FONTES (SIL Open Font License 1.1)
+Lilita One, Pixelify Sans e Nunito, na pasta fonts/.

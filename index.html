@@ -1,175 +1,233 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#171b12">
-  <meta name="description" content="Rei da Castanha apresenta Pânico na Floresta, e o Castanha 2 Irmãs abre o mercado onde castanha se paga com folhas, brilhos e pedras.">
-  <meta property="og:title" content="Rei da Castanha + Castanha 2 Irmãs">
-  <meta property="og:description" content="Ouça Pânico na Floresta e faça compras no mercado de castanhas da floresta.">
-  <meta property="og:image" content="assets/logo-castanha-2-irmas.webp">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌰%3C/text%3E%3C/svg%3E">
-  <title>Rei da Castanha | Pânico na Floresta e Mercado das Duas Irmãs</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Rye&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f140d">
+  <title>Rei da Castanha | Pânico na Floresta</title>
+  <meta name="description" content="Jogue Pânico na Floresta, ouça a faixa do Rei da Castanha e faça compras no Mercado das Duas Irmãs, onde castanha se paga com folhas, brilhos e pedras.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Rei da Castanha | Pânico na Floresta">
+  <meta property="og:description" content="Um jogo de plataforma, uma faixa de rock e um mercado de castanhas. Tudo na mesma floresta.">
+  <meta property="og:image" content="assets/saga/og.jpg">
+  <link rel="icon" href="assets/marca/icone-192.png" type="image/png">
+  <link rel="preload" href="fonts/LilitaOne-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
-  <a class="skip" href="#mercado">Ir para o mercado</a>
-  <header class="topbar">
-    <a class="brand" href="#inicio" aria-label="Rei da Castanha - início">
-      <img src="assets/logo-rei-da-castanha.webp" alt="Logotipo Rei da Castanha">
-      <span>REI DA CASTANHA</span>
+  <a class="skip" href="#jogar">Pular para o jogo</a>
+
+  <header class="top" id="topo">
+    <a class="brand" href="#inicio" aria-label="Rei da Castanha, início">
+      <img src="assets/marca/logo-rei-da-castanha.webp" alt="" width="44" height="44">
+      <span>Rei da Castanha</span>
     </a>
-    <nav class="top-nav" aria-label="Principal">
-      <a class="top-link" href="#ouvir">Ouvir</a>
-      <a class="top-link" href="#historia">História</a>
-      <a class="top-link" href="#mercado">Mercado</a>
-      <a class="bag-chip" href="#mercado" aria-label="Sua bolsa"><span data-chip>🍂 24 · ✨ 4 · 🪨 2</span></a>
+    <nav class="nav" aria-label="Seções">
+      <a href="#jogar">Jogar</a>
+      <a href="#saga">Saga</a>
+      <a href="#musica">Música</a>
+      <a href="#mercado">Mercado</a>
     </nav>
+    <a class="bag-chip" href="#mercado" aria-label="Sua bolsa no mercado"><span data-chip>🍂 24 · ✨ 4 · 🪨 2</span></a>
   </header>
 
   <main id="inicio">
-    <section class="hero">
+    <!-- ============================================================ HERÓI -->
+    <section class="hero" aria-labelledby="hero-h">
+      <picture class="hero-art">
+        <source media="(max-width: 760px)" srcset="assets/saga/03-guitarra-800.webp">
+        <img src="assets/saga/03-guitarra.webp" alt="O Rei da Castanha, um esquilo de jaqueta de couro, toca guitarra na floresta rodeado de castanhas" width="1600" height="893" fetchpriority="high">
+      </picture>
       <div class="hero-copy">
-        <p class="eyebrow"><span class="pulse"></span> UMA AVENTURA MUSICAL NA FLORESTA</p>
-        <h1>PÂNICO NA<br><em>FLORESTA</em></h1>
-        <p class="intro">Quando as castanhas desaparecem, a floresta inteira sente o peso do rock. Mas calma: essa história tem uma virada deliciosa.</p>
-        <a class="primary-button" href="#ouvir">▶ &nbsp; DAR O PLAY</a>
-        <a class="ghost-button" href="#mercado">Visitar o mercado</a>
-        <p class="small-note">Aumente o som. Proteja suas castanhas.</p>
+        <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Rock, fome e castanhas</p>
+        <h1 id="hero-h"><span class="h-pre">Pânico na</span><span class="h-main">Floresta</span></h1>
+        <p class="lead">Alguém saqueou a despensa do Rei. Agora ele corre, pula e pisa em formiga até recuperar cada castanha e chegar ao caminhão das Duas Irmãs.</p>
+        <div class="actions">
+          <a class="btn primary" href="#jogar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z"/></svg>Jogar agora</a>
+          <button class="btn ghost" type="button" data-play-song><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2h8v9.5a2.5 2.5 0 1 1-2-2.45V5H8v7.5a2.5 2.5 0 1 1-2-2.45z"/></svg>Ouvir a faixa</button>
+        </div>
       </div>
-      <div class="hero-art">
-        <div class="orbit orbit-one"></div>
-        <div class="orbit orbit-two"></div>
-        <img class="logo-large" src="assets/logo-rei-da-castanha.webp" alt="Esquilo Rei da Castanha segurando uma castanha">
-        <div class="sticker">ROCK<br><span>•</span> & CASTANHA</div>
-      </div>
-      <div class="scroll-cue">ROLE PARA DESCOBRIR <span>↓</span></div>
+      <ul class="facts" aria-label="Destaques">
+        <li><b>5</b><span>fases geradas a cada partida</span></li>
+        <li><b>1</b><span>faixa original de rock</span></li>
+        <li><b>16</b><span>castanhas no mercado</span></li>
+      </ul>
     </section>
 
-    <section class="listen-section" id="ouvir">
-      <div class="section-heading">
-        <p class="eyebrow">♪ FAIXA EM DESTAQUE</p>
-        <h2>O SOM DA <em>FLORESTA</em></h2>
-        <p>Aperte o play e acompanhe a saga do esquilo mais casca-grossa da mata.</p>
-      </div>
-      <div class="player-card">
-        <div class="player-top">
-          <div class="record-art">
-            <img src="assets/logo-rei-da-castanha.webp" alt="">
-            <span>RK</span>
-          </div>
-          <div class="track-info">
-            <span class="track-label">REI DA CASTANHA APRESENTA</span>
-            <h3>Pânico na Floresta</h3>
-            <p>Uma história de fome, fúria e castanhas.</p>
-          </div>
-          <div class="equalizer" aria-label="Música">
-            <i></i><i></i><i></i><i></i><i></i>
-          </div>
-        </div>
-        <div class="audio-player">
-          <audio id="music-player" controls preload="metadata">
-            <source src="music.mp3" type="audio/mpeg">
-            Seu navegador não suporta áudio HTML5.
-          </audio>
-          <p id="audio-status" class="audio-status" role="status"></p>
-        </div>
-        <div class="player-footer">
-          <span>ÁUDIO ORIGINAL DA REI DA CASTANHA</span>
-          <a href="music.mp3" download="music.mp3">BAIXAR MÚSICA ↓</a>
-        </div>
-      </div>
-          </section>
-
-    <section class="gallery-section" id="historia">
-      <div class="gallery-heading">
-        <p class="eyebrow">♪ A LETRA GANHA VIDA</p>
-        <h2>A SAGA EM <em>IMAGENS</em></h2>
-        <p>Cada cena acompanha um momento de “Pânico na Floresta”. Use as setas para reviver a história.</p>
+    <!-- ============================================================ JOGO -->
+    <section class="game-sec" id="jogar" aria-labelledby="jogar-h">
+      <div class="sec-head">
+        <p class="kicker">Fase 1 de 5</p>
+        <h2 id="jogar-h">O jogo</h2>
+        <p>Plataforma 2D no navegador, sem instalar nada. Cada partida nasce de uma semente: digite a mesma e jogue a mesma floresta que um amigo.</p>
       </div>
 
-      <div class="story-carousel" aria-label="Carrossel de cenas da música">
-        <div class="carousel-frame">
-          <img id="story-image" src="assets/historia-02-furia.jpg" alt="O Rei da Castanha irritado na floresta">
-          <div class="carousel-caption">
-            <span id="story-count">01 / 06</span>
-            <div>
-              <h3 id="story-title">A despensa foi saqueada</h3>
-              <p id="story-description">As castanhas sumiram. A paciência do esquilo também.</p>
+      <div class="screen" id="screen">
+        <div class="screen-poster" id="poster">
+          <img src="assets/saga/jogo-capa.webp" alt="Tela inicial do jogo: o esquilo coroado na floresta ao amanhecer" width="1600" height="900" loading="lazy">
+          <button class="start" id="start-game" type="button">
+            <span class="start-ico" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z"/></svg></span>
+            <span class="start-txt">Começar<small>carrega o jogo aqui mesmo</small></span>
+          </button>
+        </div>
+        <div class="screen-bar">
+          <span class="screen-status" id="game-status" role="status">Pronto para carregar</span>
+          <div class="screen-tools">
+            <button class="chip" type="button" id="game-full" disabled>Tela cheia</button>
+            <a class="chip" href="jogo/index.html" target="_blank" rel="noopener">Abrir em outra aba ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="howto">
+        <article>
+          <h3>Teclado</h3>
+          <p><kbd>←</kbd> <kbd>→</kbd> ou <kbd>A</kbd> <kbd>D</kbd> andam. <kbd>Espaço</kbd> pula, segure para ir mais alto. <kbd>J</kbd> ou <kbd>X</kbd> dá um tabefe. <kbd>Esc</kbd> pausa.</p>
+        </article>
+        <article>
+          <h3>Controle</h3>
+          <p>Analógico anda, <kbd>A</kbd>/<kbd>✕</kbd> pula, <kbd>X</kbd>/<kbd>□</kbd> bate, <kbd>Start</kbd> pausa. Funciona com Xbox e PlayStation.</p>
+        </article>
+        <article>
+          <h3>Celular</h3>
+          <p>Deite o aparelho e use os botões na tela: andar, Bater e Pular. Em tela cheia fica bem melhor.</p>
+        </article>
+        <article class="tip">
+          <h3>A regra do caminhão</h3>
+          <p>Pise ou bata nos bichos (o terceiro tabefe seguido é o Combo do Rei) e junte castanhas. O caminhão só abre quando você bate a meta da fase. A cada 25, ganha um coração.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================================================ SAGA -->
+    <section class="saga" id="saga" aria-labelledby="saga-h">
+      <div class="sec-head">
+        <p class="kicker">A letra ganha vida</p>
+        <h2 id="saga-h">A saga</h2>
+        <p>A faixa conta uma história em quatro atos. O jogo é o terceiro.</p>
+      </div>
+
+      <ol class="acts">
+        <li class="act reveal">
+          <figure class="act-art"><img src="assets/saga/02-furia.webp" srcset="assets/saga/02-furia-800.webp 800w, assets/saga/02-furia.webp 1600w" sizes="(max-width: 860px) 100vw, 55vw" alt="O Rei da Castanha, furioso, ao lado de um tronco vazio e cascas espalhadas" width="1600" height="893" loading="lazy"></figure>
+          <div class="act-copy">
+            <span class="act-n">Ato 1</span>
+            <h3>A despensa foi saqueada</h3>
+            <p>“Cadê minhas castanhas?!” O tronco está vazio, só sobraram cascas. A fome vira indignação e a floresta inteira sente o clima.</p>
+          </div>
+        </li>
+        <li class="act reveal">
+          <figure class="act-art"><img src="assets/saga/03-guitarra.webp" srcset="assets/saga/03-guitarra-800.webp 800w, assets/saga/03-guitarra.webp 1600w" sizes="(max-width: 860px) 100vw, 55vw" alt="O Rei toca uma guitarra vermelha de olhos fechados, ao lado de um amplificador" width="1600" height="893" loading="lazy"></figure>
+          <div class="act-copy">
+            <span class="act-n">Ato 2</span>
+            <h3>A fúria vira rock</h3>
+            <p>Jaqueta de couro, guitarra ligada e o amplificador no máximo. Cada acorde é um trovão entre as árvores.</p>
+          </div>
+        </li>
+        <li class="act act-game reveal">
+          <figure class="act-art act-logo"><img src="assets/marca/logo-castanha-2-irmas.webp" alt="Logotipo Castanha 2 Irmãs: dois esquilos roqueiros ao lado de uma castanha" width="874" height="513" loading="lazy"></figure>
+          <div class="act-copy">
+            <span class="act-n">Ato 3 · você joga</span>
+            <h3>A corrida até o caminhão</h3>
+            <p>O caminhão da Castanha 2 Irmãs está carregado, mas só abre para quem provar que merece. Cinco fases, do amanhecer ao festival sob a lua.</p>
+            <a class="btn small" href="#jogar">Jogar este ato</a>
+          </div>
+        </li>
+        <li class="act reveal">
+          <figure class="act-art"><img src="assets/saga/06-felicidade.webp" srcset="assets/saga/06-felicidade-800.webp 800w, assets/saga/06-felicidade.webp 1600w" sizes="(max-width: 860px) 100vw, 55vw" alt="O Rei da Castanha sorri de orelha a orelha abraçando uma castanha" width="1600" height="893" loading="lazy"></figure>
+          <div class="act-copy">
+            <span class="act-n">Ato 4</span>
+            <h3>Castanhas para todo lado</h3>
+            <p>A fome passou, a raiva acabou e o Rei está no paraíso. Na floresta, a alegria tem nome.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============================================================ MÚSICA -->
+    <section class="music" id="musica" aria-labelledby="musica-h">
+      <div class="music-card">
+        <div class="disc" aria-hidden="true"><img src="assets/marca/logo-rei-da-castanha.webp" alt="" width="900" height="900" loading="lazy"></div>
+        <div class="music-body">
+          <p class="kicker">Faixa original</p>
+          <h2 id="musica-h">Pânico na Floresta</h2>
+          <p class="music-sub">Rei da Castanha · uma história de fome, fúria e castanhas</p>
+          <div class="player" id="player">
+            <button class="play" type="button" id="song-toggle" aria-label="Tocar"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="i-play" d="M4 2l10 6-10 6z"/><path class="i-pause" d="M3 2h4v12H3zM9 2h4v12H9z"/></svg></button>
+            <div class="track">
+              <input type="range" id="song-seek" min="0" max="1000" value="0" step="1" aria-label="Posição da música">
+              <div class="times"><span id="song-cur">0:00</span><span id="song-dur">3:00</span></div>
             </div>
           </div>
-        </div>
-        <div class="carousel-controls">
-          <button type="button" id="story-prev" aria-label="Imagem anterior">←</button>
-          <div class="carousel-dots" id="story-dots" aria-label="Escolher cena"></div>
-          <button type="button" id="story-next" aria-label="Próxima imagem">→</button>
+          <p class="music-msg" id="song-msg" role="status"></p>
+          <a class="dl" href="assets/musica/panico-na-floresta.mp3" download="Rei da Castanha - Pânico na Floresta.mp3">Baixar MP3</a>
         </div>
       </div>
+      <audio id="song" preload="none" src="assets/musica/panico-na-floresta.mp3"></audio>
     </section>
 
-    <section class="market" id="mercado">
+    <!-- ============================================================ MERCADO -->
+    <section class="market" id="mercado" aria-labelledby="mercado-h">
       <div class="market-head">
-        <img class="market-logo" src="assets/logo-castanha-2-irmas.webp" alt="Logotipo Castanha 2 Irmãs: dois esquilos roqueiros ao lado de uma castanha" width="900" height="528">
+        <img src="assets/marca/logo-castanha-2-irmas.webp" alt="Castanha 2 Irmãs" width="874" height="513" loading="lazy">
         <div>
-          <h2>Mercado das<br>Duas Irmãs</h2>
-          <p>Aqui ninguém aceita dinheiro. Pague com folhas, brilhos ou pedras. Se a bolsa esvaziar, cate mais na floresta.</p>
+          <p class="kicker">Aqui ninguém aceita dinheiro</p>
+          <h2 id="mercado-h">Mercado das Duas Irmãs</h2>
+          <p>Pague com folhas, brilhos ou pedras. Se a bolsa esvaziar, cate mais na floresta. O mercado é de brincadeira: nada é cobrado de verdade.</p>
         </div>
       </div>
 
       <div class="market-grid">
-        <aside class="side">
-          <section class="bolsa" aria-labelledby="bolsa-t">
+        <div class="shelf" id="shelf" aria-label="Produtos"></div>
+
+        <aside class="counter" aria-label="Balcão">
+          <section class="box" aria-labelledby="bolsa-t">
             <h3 id="bolsa-t">Sua bolsa</h3>
             <ul class="coins" id="coins"></ul>
-            <button class="forage" id="forage" type="button">Catar na floresta</button>
-            <p class="msg" id="forage-msg" role="status" aria-live="polite">Cada cata rende folhas, e às vezes um brilho ou uma pedra.</p>
-            <p class="rates">Câmbio da mata: 1 ✨ = 6 🍂 &nbsp;·&nbsp; 1 🪨 = 15 🍂</p>
+            <button class="btn small wide" id="forage" type="button">Catar na floresta</button>
+            <p class="msg" id="forage-msg" role="status">Cada cata rende folhas, e às vezes um brilho ou uma pedra.</p>
+            <p class="rates">Câmbio: 1 ✨ = 6 🍂 · 1 🪨 = 15 🍂</p>
           </section>
-          <section class="sacola" aria-labelledby="sacola-t">
+          <section class="box" aria-labelledby="sacola-t">
             <h3 id="sacola-t">Sacola</h3>
             <ul class="cart" id="cart"></ul>
             <div class="pay" id="pay"></div>
-            <p class="msg" id="pay-msg" role="status" aria-live="polite"></p>
+            <p class="msg" id="pay-msg" role="status"></p>
           </section>
-          <section class="despensa" aria-labelledby="desp-t">
+          <section class="box" aria-labelledby="desp-t">
             <h3 id="desp-t">Despensa</h3>
-            <p id="pantry">Nada por aqui ainda.</p>
-            <button class="reset" id="reset" type="button">Recomeçar com a bolsa inicial</button>
+            <p class="pantry" id="pantry">Nada por aqui ainda.</p>
+            <button class="link" id="reset" type="button">Recomeçar com a bolsa inicial</button>
           </section>
         </aside>
-        <div><div class="shelf" id="shelf" aria-label="Produtos"></div>
-          <p class="credits">Fotos da Wikimedia Commons, cada uma com sua própria licença (em geral CC BY-SA). Use o link “foto” de cada item para ver autoria e licença.</p></div>
       </div>
+      <p class="fineprint">Fotos dos produtos: Wikimedia Commons, cada uma com sua licença (em geral CC BY-SA). O link “foto” de cada item mostra autoria e licença.</p>
     </section>
 
-    <section class="story">
-      <div class="story-mark">01 / A LENDA</div>
-      <div>
-        <p class="eyebrow">UMA HISTÓRIA DE RESPEITO</p>
-        <h2>CASTANHA É<br><em>COISA SÉRIA.</em></h2>
-        <p>Um esquilo. Um estoque desaparecido. Uma guitarra no volume máximo. Prepare-se para uma jornada que começa pesada e termina em festa.</p>
+    <section class="finale" aria-labelledby="fim-h">
+      <p class="kicker">Na floresta, a alegria tem nome</p>
+      <h2 id="fim-h">Castanha pra cá, pra lá!</h2>
+      <div class="actions center">
+        <a class="btn primary" href="#jogar">Jogar de novo</a>
+        <button class="btn ghost" type="button" data-play-song>Ouvir de novo</button>
       </div>
-      <div class="story-seal">100%<br><span>CASCA<br>GROSSA</span></div>
-    </section>
-
-    <section class="final-cta">
-      <span class="acorn">✦</span>
-      <p>NA FLORESTA, A ALEGRIA TEM NOME.</p>
-      <h2>CASTANHA<br><em>PRA CÁ, PRA LÁ!</em></h2>
-      <a class="primary-button" href="#ouvir">▶ &nbsp; OUVIR DE NOVO</a> <a class="ghost-button" href="#mercado">Comprar castanhas</a>
     </section>
   </main>
 
-  <footer>
-    <a href="#inicio">REI DA CASTANHA</a>
-    <span>Feito para quem leva o rock e a castanha a sério. O mercado é fictício: nenhuma folha foi paga de verdade.</span>
-    <span>© <span id="year"></span></span>
+  <footer class="foot">
+    <p><b>Rei da Castanha</b> · feito para quem leva o rock e a castanha a sério.</p>
+    <p>Jogo: sprites Sunny Land Woods, de Ansimuz (CC0). Fontes Lilita One, Pixelify Sans e Nunito (SIL OFL). Fases, iluminação e cenários gerados por código.</p>
+    <p>© <span id="year">2026</span></p>
   </footer>
-  <script src="script.js"></script>
-  <script src="loja.js"></script>
+
+  <!-- mini player: aparece quando a música toca e o cartão saiu da tela -->
+  <div class="mini" id="mini" aria-label="Música tocando" hidden>
+    <button class="play" type="button" id="mini-toggle" aria-label="Pausar"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="i-play" d="M4 2l10 6-10 6z"/><path class="i-pause" d="M3 2h4v12H3zM9 2h4v12H9z"/></svg></button>
+    <a href="#musica"><b>Pânico na Floresta</b><span id="mini-time">0:00</span></a>
+    <span class="mini-bar" aria-hidden="true"><i id="mini-fill"></i></span>
+  </div>
+
+  <script src="js/site.js"></script>
+  <script src="js/mercado.js"></script>
 </body>
 </html>
