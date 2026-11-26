@@ -30,51 +30,51 @@
       id: 'amanhecer', sky: ['#4d6fae', '#f0b080', '#ffe0a8'], sunDisc: '#fff0c8', cloud: '#ffd9b0', fog: '#f2c79a', mist: '#ffd8a8',
       sunPos: [0.74, 0.50], sunSize: 0.045, moon: false, stars: 0, clouds: 0.8,
       ambient: '#7b78a0', ambK: 0.5, sunLight: '#ffcf8c', sunK: 1.1, ray: '#ffcc88',
-      exposure: 1.0, contrast: 1.06, sat: 1.12, gradeShadow: [0.92, 0.95, 1.12], gradeHigh: [1.1, 1.0, 0.86],
-      bloom: 0.52, bloomThr: 0.78, rays: 1.1, vignette: 0.34, grain: 0.028, depthBlur: 0.7,
+      exposure: 0.96, contrast: 1.06, sat: 1.12, gradeShadow: [0.92, 0.95, 1.12], gradeHigh: [1.1, 1.0, 0.86],
+      bloom: 0.26, bloomThr: 0.9, rays: 0.39, vignette: 0.34, grain: 0.028, depthBlur: 0.7,
       fDark: '#2b3f38', fLight: '#9aa86a', mtn: ['#6f6c98', '#f0b99c'],
       grass: ['#1a3a28', '#27602f', '#3f8a37', '#6bb348', '#a8d65e', '#e2f394'],
-      fireflies: 0.15, leaves: 0.5, lanternK: 0.15, haze: 0.5
+      fireflies: 0.15, leaves: 0.5, lanternK: 0.15, haze: 0.25
     }),
     mood({ // 1 — meio-dia, mata fechada
       id: 'mata', sky: ['#3a86cf', '#86c8e8', '#dff0c4'], sunDisc: '#fffbe0', cloud: '#ffffff', fog: '#bfe2c4', mist: '#d4efd0',
       sunPos: [0.30, 0.16], sunSize: 0.04, moon: false, stars: 0, clouds: 0.9,
       ambient: '#86a8a0', ambK: 0.5, sunLight: '#fff2c4', sunK: 0.95, ray: '#fff0b8',
-      exposure: 1.0, contrast: 1.07, sat: 1.18, gradeShadow: [0.9, 1.0, 1.08], gradeHigh: [1.06, 1.04, 0.92],
-      bloom: 0.42, bloomThr: 0.82, rays: 1.45, vignette: 0.3, grain: 0.024, depthBlur: 0.65,
+      exposure: 0.96, contrast: 1.07, sat: 1.18, gradeShadow: [0.9, 1.0, 1.08], gradeHigh: [1.06, 1.04, 0.92],
+      bloom: 0.21, bloomThr: 0.92, rays: 0.51, vignette: 0.3, grain: 0.024, depthBlur: 0.65,
       fDark: '#1c3d33', fLight: '#7fb865', mtn: ['#4f7ea0', '#a9d6dd'],
       grass: ['#16402a', '#23702f', '#3a9a3a', '#66c452', '#a2e069', '#e6fba0'],
-      fireflies: 0, leaves: 0.8, lanternK: 0, haze: 0.45
+      fireflies: 0, leaves: 0.8, lanternK: 0, haze: 0.23
     }),
     mood({ // 2 — entardecer magenta
       id: 'entardecer', sky: ['#30245f', '#d4507a', '#ffb067'], sunDisc: '#ffe2a0', cloud: '#ff9a7a', fog: '#e58478', mist: '#ff9d86',
       sunPos: [0.27, 0.58], sunSize: 0.075, moon: false, stars: 0.15, clouds: 0.95,
       ambient: '#7c5c92', ambK: 0.55, sunLight: '#ff9a52', sunK: 1.75, ray: '#ff9060',
-      exposure: 1.1, contrast: 1.08, sat: 1.15, gradeShadow: [0.95, 0.88, 1.18], gradeHigh: [1.14, 0.98, 0.82],
-      bloom: 0.58, bloomThr: 0.74, rays: 1.5, vignette: 0.38, grain: 0.03, depthBlur: 0.75,
+      exposure: 1.06, contrast: 1.08, sat: 1.15, gradeShadow: [0.95, 0.88, 1.18], gradeHigh: [1.14, 0.98, 0.82],
+      bloom: 0.29, bloomThr: 0.86, rays: 0.52, vignette: 0.38, grain: 0.03, depthBlur: 0.75,
       fDark: '#2a2447', fLight: '#c26a62', mtn: ['#5a3f78', '#e87d80'],
       grass: ['#1c3326', '#2c5a2e', '#4b8030', '#7fa83c', '#c0c452', '#f3e48a'],
-      fireflies: 0.3, leaves: 0.7, lanternK: 0.5, haze: 0.5
+      fireflies: 0.3, leaves: 0.7, lanternK: 0.5, haze: 0.25
     }),
     mood({ // 3 — hora azul, vaga-lumes
       id: 'horaazul', sky: ['#101745', '#3a4c96', '#9486bd'], sunDisc: '#e8eeff', cloud: '#7e86c4', fog: '#5a69a6', mist: '#7482be',
       sunPos: [0.70, 0.22], sunSize: 0.03, moon: true, stars: 0.7, clouds: 0.6,
       ambient: '#5568a8', ambK: 0.62, sunLight: '#9db2ff', sunK: 0.85, ray: '#9aaeff',
-      exposure: 1.12, contrast: 1.08, sat: 1.1, gradeShadow: [0.9, 0.96, 1.22], gradeHigh: [1.0, 1.0, 1.12],
-      bloom: 0.7, bloomThr: 0.68, rays: 0.9, vignette: 0.42, grain: 0.034, depthBlur: 0.8,
+      exposure: 1.08, contrast: 1.08, sat: 1.1, gradeShadow: [0.9, 0.96, 1.22], gradeHigh: [1.0, 1.0, 1.12],
+      bloom: 0.35, bloomThr: 0.8, rays: 0.32, vignette: 0.42, grain: 0.034, depthBlur: 0.8,
       fDark: '#141c44', fLight: '#5a6cb0', mtn: ['#2a3170', '#6a76b8'],
       grass: ['#10263a', '#1a4a50', '#2a6c58', '#4a9a6a', '#7cc686', '#b6eca0'],
-      fireflies: 1, leaves: 0.3, lanternK: 1.0, haze: 0.5
+      fireflies: 1, leaves: 0.3, lanternK: 1.0, haze: 0.25
     }),
     mood({ // 4 — noite de lua, lanternas
       id: 'noite', sky: ['#050816', '#101c46', '#26386f'], sunDisc: '#f2f5ff', cloud: '#4b5ba0', fog: '#1d2c5c', mist: '#2c3f80',
       sunPos: [0.58, 0.26], sunSize: 0.052, moon: true, stars: 1, clouds: 0.45,
       ambient: '#3f56a0', ambK: 0.58, sunLight: '#a9bcff', sunK: 0.95, ray: '#8aa4ff',
-      exposure: 1.18, contrast: 1.1, sat: 1.08, gradeShadow: [0.88, 0.95, 1.28], gradeHigh: [1.02, 1.02, 1.14],
-      bloom: 0.82, bloomThr: 0.62, rays: 1.0, vignette: 0.46, grain: 0.038, depthBlur: 0.85,
+      exposure: 1.14, contrast: 1.1, sat: 1.08, gradeShadow: [0.88, 0.95, 1.28], gradeHigh: [1.02, 1.02, 1.14],
+      bloom: 0.41, bloomThr: 0.74, rays: 0.35, vignette: 0.46, grain: 0.038, depthBlur: 0.85,
       fDark: '#0b1030', fLight: '#3c4f94', mtn: ['#151c50', '#4a5aa6'],
       grass: ['#0e2236', '#173f48', '#25604e', '#3f8a5c', '#6ab27a', '#a2dc98'],
-      fireflies: 0.9, leaves: 0.2, lanternK: 1.5, haze: 0.45
+      fireflies: 0.9, leaves: 0.2, lanternK: 1.5, haze: 0.23
     })
   ];
 

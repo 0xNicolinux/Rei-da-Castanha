@@ -631,17 +631,17 @@
     const L = R.lights; L.length = 0;
     const m = G.mood, lk = m.lanternK;
     const pcx = player.x + player.w / 2, pcy = player.y + player.h / 2;
-    if (G.state !== 'title') L.push({ x: pcx, y: pcy - 6, z: 46, r: 230, c: [1, 0.84, 0.55], k: 0.18 + 0.9 * lk + (player.finishing ? 1 : 0) });
-    else L.push({ x: pcx, y: pcy - 6, z: 46, r: 260, c: [1, 0.84, 0.55], k: 0.9 + 0.8 * lk });
+    if (G.state !== 'title') L.push({ x: pcx, y: pcy - 6, z: 90, r: 240, c: [1, 0.84, 0.55], k: 0.15 + 0.3 * lk + (player.finishing ? 0.4 : 0) });
+    else L.push({ x: pcx, y: pcy - 6, z: 90, r: 260, c: [1, 0.84, 0.55], k: 0.45 + 0.3 * lk });
     const cand = [];
-    for (const c of G.cps) if (c.x > cam - 200 && c.x < cam + WW + 200) cand.push({ x: c.x, y: c.y - 38, z: 40, r: 260, c: LIGHT.fire, k: c.on ? 1.6 + 1.6 * lk : 0.15, d: Math.abs(c.x - pcx) - 400 });
+    for (const c of G.cps) if (c.x > cam - 200 && c.x < cam + WW + 200) cand.push({ x: c.x, y: c.y - 38, z: 40, r: 260, c: LIGHT.fire, k: c.on ? 0.9 + 0.5 * lk : 0.15, d: Math.abs(c.x - pcx) - 400 });
     const g = G.lv.goal;
     if (g.x > cam - 300 && g.x < cam + WW + 300) cand.push({ x: g.x + 150, y: g.y - 36, z: 50, r: 320, c: [1, 0.95, 0.7], k: 1.1 + 0.8 * lk, d: Math.abs(g.x - pcx) - 500 });
-    for (const f of G.flies) { const fx = flyPos(f); if (fx.x > cam - 100 && fx.x < cam + WW + 100) cand.push({ x: fx.x, y: fx.y, z: 30, r: 150, c: LIGHT.green, k: 0.9 * (0.6 + 0.4 * Math.sin(G.time * 3 + f.ph)), d: Math.abs(fx.x - pcx) }); }
+    for (const f of G.flies) { const fx = flyPos(f); if (fx.x > cam - 100 && fx.x < cam + WW + 100) cand.push({ x: fx.x, y: fx.y, z: 40, r: 150, c: LIGHT.green, k: 0.45 * (0.6 + 0.4 * Math.sin(G.time * 3 + f.ph)), d: Math.abs(fx.x - pcx) }); }
     let near = 0;
     for (const n of G.nuts) {
       if (n.taken || n.x < cam - 40 || n.x > cam + WW + 40) continue;
-      cand.push({ x: n.x, y: n.y, z: 24, r: 120, c: LIGHT.warm, k: (n.golden ? 1.4 : 0.55) * (0.5 + lk * 0.6), d: Math.abs(n.x - pcx) + 120 });
+      cand.push({ x: n.x, y: n.y, z: 44, r: 110, c: LIGHT.warm, k: (n.golden ? 0.6 : 0.22) * (0.6 + lk * 0.3), d: Math.abs(n.x - pcx) + 120 });
     }
     cand.sort((a, b) => a.d - b.d);
     for (const c of cand) { if (L.length >= 8) break; L.push(c); }
