@@ -1,7 +1,7 @@
 /* Rei da Castanha — núcleo do jogo: estados, física, inimigos, câmera, render e UI. */
 (function () {
   'use strict';
-  const RC = window.RC, LG = RC.LevelGen, PH = RC.PHYS;
+  const RC = window.RC, LG = RC.LevelGen, PH = RC.PHYS;      // LG: fases feitas à mão (js/levels.js)
   const { clamp, lerp } = RC;
   const T = LG.T, WW = 960, WH = 540, S = 2;
   const EV = RC.events;                 // S = tamanho do texel em unidades
@@ -19,8 +19,11 @@
     x: 0, y: 0, vx: 0, vy: 0, w: PH.W, h: PH.H, grounded: false, facing: 1, coyote: 0, buf: 0, jumpHeld: false,
     invuln: 0, hurtT: 0, sx: 1, sy: 1, animT: 0, jumping: false, landT: 0, dead: false, finishing: false,
     idleT: 0, atk: 0, atkCd: 0, atkBuf: 0, atkId: 0, combo: 0, lastAtkT: -9, lastBeat: -1,
-    gliding: false, glideT: 0, pound: 0, poundHang: 0, chain: 0, prevJump: false, prevDown: false
+    gliding: false, glideT: 0, pound: 0, poundHang: 0, chain: 0, prevJump: false, prevDown: false,
+    dash: 0, dashCd: 0, airDash: true, prevDash: false, vine: null, rope: null, swim: false, regrab: 0, swimCd: 0
   };
+  /* arrancada (Shift/L): curta, sem invencibilidade; uma no ar, recarrega ao pousar, agarrar cipó ou pisar num bicho */
+  const DASH = { T: 0.15, V: 640, CD: 0.32 };
   /* golpe: DUR total, janela ativa ON..OFF (segundos desde o início), alcance à frente; 3º golpe seguido é o finalizador */
   const ATK = { DUR: 0.26, ON: 0.05, OFF: 0.16, CD: 0.3, BUF: 0.14, REACH: 58, CHAIN: 0.55 };
   /* planar: aperte pular de novo no ar e segure (a cauda abre) — fôlego limitado por pulo.
@@ -35,7 +38,7 @@
   const ui = {
     hud: $('hud'), nuts: $('hud-nuts'), need: $('hud-need'), hearts: $('hud-hearts'), prog: $('hud-prog'), progBar: $('hud-prog-fill'),
     title: $('title'), card: $('stage-card'), cardName: $('stage-name'), cardNum: $('stage-num'), pause: $('pause'), done: $('done'),
-    over: $('over'), win: $('win'), toast: $('toast'), loading: $('loading'), seedLabel: $('hud-seed')
+    over: $('over'), win: $('win'), toast: $('toast'), loading: $('loading')
   };
 
   /* ---------------------------------------------------------------- áudio */
@@ -109,7 +112,7 @@
     ui.loading.classList.add('visible');
     await nextFrame(); await nextFrame();
     if (G.res) { G.res.chunks.forEach((c) => R.freeSet(c.set)); R.freeSet(G.res.branches.set); }
-    const lv = LG.build(G.seed, stage);
+    const lv = LG.build(stage);
     const mood = RC.MOODS[lv.mood];
     const chunks = RC.paintTerrain(R, lv, mood);
     const branches = RC.paintBranches(R, lv, mood);
@@ -167,7 +170,6 @@
     // posição inicial
     spawnPlayer(lv.start.x, lv.start.y);
     G.camX = G.camTarget = clamp(player.x - WW * 0.35, 0, lv.width - WW);
-    ui.seedLabel.textContent = `semente ${G.seed}`;
     renderNuts(); renderHearts();
   }
 
@@ -177,6 +179,7 @@
     player.dead = false; player.finishing = false;
     player.idleT = 0; player.atk = 0; player.atkCd = 0; player.atkBuf = 0; player.combo = 0;
     player.gliding = false; player.glideT = GLIDE.MAX; player.pound = 0; player.poundHang = 0; player.chain = 0;
+    player.dash = 0; player.dashCd = 0; player.airDash = true; player.vine = null; player.rope = null; player.swim = false; player.regrab = 0;
   }
 
   /* ---------------------------------------------------------------- inimigos */
@@ -248,22 +251,54 @@
     const lv = G.lv;
     const left = keys.has('ArrowLeft') || keys.has('KeyA') || keys.has('PadLeft');
     const right = keys.has('ArrowRight') || keys.has('KeyD') || keys.has('PadRight');
-    const jumpHeld = keys.has('Space') || keys.has('ArrowUp') || keys.has('KeyW') || keys.has('PadJump');
+    const upHeld = keys.has('ArrowUp') || keys.has('KeyW') || keys.has('PadUp');
+    const onLine = !!(player.vine || player.rope);           // no cipó, ↑/W sobe em vez de pular
+    const jumpHeld = keys.has('Space') || keys.has('PadJump') || (!onLine && (keys.has('ArrowUp') || keys.has('KeyW')));
     const downHeld = keys.has('ArrowDown') || keys.has('KeyS') || keys.has('PadDown');
-    const jumpPress = jumpHeld && !player.prevJump, downPress = downHeld && !player.prevDown;
-    player.prevJump = jumpHeld; player.prevDown = downHeld;
+    const dashHeld = keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyL') || keys.has('PadDash');
+    const jumpPress = jumpHeld && !player.prevJump, downPress = downHeld && !player.prevDown, dashPress = dashHeld && !player.prevDash;
+    player.prevJump = jumpHeld; player.prevDown = downHeld; player.prevDash = dashHeld;
     let dir = (right ? 1 : 0) - (left ? 1 : 0);
     if (player.finishing) dir = 1;
     if (player.hurtT > 0) { player.hurtT -= dt; dir = 0; }
+    player.regrab -= dt; player.dashCd -= dt; player.swimCd -= dt;
+
+    // cipós e cordas (js/mechanics.js) assumem o controle enquanto o Rei está pendurado
+    const inp = { dir, up: upHeld, down: downHeld, jumpPress, jumpHeld, dashPress };
+    if (RC.mech && !player.finishing && player.hurtT <= 0 && RC.mech.control(player, dt, inp)) {
+      player.gliding = false; player.pound = 0; player.dash = 0; player.airDash = true; player.glideT = GLIDE.MAX; player.chain = 0;
+      player.coyote = 0; player.buf = 0; player.grounded = false; player.animT += dt; player.idleT = 0;
+      if (player.invuln > 0) player.invuln = Math.max(0, player.invuln - dt);
+      const k = 1 - Math.exp(-dt * 16); player.sx += (1 - player.sx) * k; player.sy += (1 - player.sy) * k;
+      if (player.y > WH + 70 && !player.dead) fall();
+      return;
+    }
+    // água: o centro do Rei abaixo da superfície
+    const surf = RC.mech ? RC.mech.waterAt(player.x + player.w / 2, player.y + player.h * 0.55) : null;
+    const wasSwim = player.swim; player.swim = surf !== null;
+    if (player.swim !== wasSwim) EV.emit(player.swim ? 'waterIn' : 'waterOut', player.x + player.w / 2, surf !== null ? surf : player.y + player.h);
+    if (player.swim) { player.gliding = false; player.pound = 0; player.airDash = true; player.glideT = GLIDE.MAX; }
+
+    // arrancada
+    if (dashPress && player.dashCd <= 0 && !player.dash && (player.grounded || player.airDash || player.swim) && !player.finishing && player.hurtT <= 0) {
+      if (dir) player.facing = dir;
+      player.dash = DASH.T * (player.swim ? 1.4 : 1); player.dashCd = DASH.CD; if (!player.grounded) player.airDash = false;
+      player.gliding = false; player.pound = 0; player.jumping = false; player.sx = 1.3; player.sy = 0.8;
+      sfx('dash', 0.32); EV.emit('dash', player.facing);
+    }
 
     const grounded = player.grounded;
-    const accel = grounded ? PH.ACC_G : PH.ACC_A;
-    const maxV = PH.RUN * (player.finishing ? 0.7 : 1);
-    if (dir) {
-      // virar rápido
-      if (Math.sign(player.vx) !== dir && player.vx !== 0) player.vx += dir * accel * 1.5 * dt; else player.vx += dir * accel * dt;
+    const accel = (grounded ? PH.ACC_G : PH.ACC_A) * (player.swim ? 0.55 : 1);
+    const maxV = PH.RUN * (player.finishing ? 0.7 : 1) * (player.swim ? 0.62 : 1);
+    if (player.dash > 0) {
+      player.dash -= dt; player.vx = player.facing * DASH.V * (player.swim ? 0.6 : 1); player.vy = 0;
+      if (player.dash <= 0) { player.dash = 0; player.vx = player.facing * maxV; }
+    } else if (dir) {
+      // virar rápido; acima da corrida (arremesso do cipó, arrancada) o embalo cai aos poucos em vez de cortar seco
+      if (Math.sign(player.vx) !== dir && player.vx !== 0) player.vx += dir * accel * 1.5 * dt;
+      else if (Math.abs(player.vx) < maxV) player.vx = Math.min(maxV, Math.abs(player.vx + dir * accel * dt)) * dir;
       if (player.atk <= 0) player.facing = dir;
-      if (Math.abs(player.vx) > maxV) player.vx = Math.sign(player.vx) * maxV;
+      if (Math.abs(player.vx) > maxV) player.vx = Math.sign(player.vx) * Math.max(maxV, Math.abs(player.vx) - (grounded ? 1400 : 380) * dt);
     } else if (player.hurtT <= 0) {
       const f = (grounded ? PH.FRIC_G : PH.FRIC_A) * dt;
       player.vx = Math.abs(player.vx) <= f ? 0 : player.vx - Math.sign(player.vx) * f;
@@ -271,7 +306,12 @@
 
     player.coyote = grounded ? PH.COYOTE : player.coyote - dt;
     player.buf -= dt;
-    if (player.buf > 0 && player.coyote > 0 && player.hurtT <= 0 && !player.finishing) {
+    if (player.swim && player.buf > 0 && player.swimCd <= 0 && player.hurtT <= 0) {
+      // perto da superfície: salto para fora; mais fundo: braçada
+      const nearTop = player.y < surf + 2;
+      player.vy = nearTop ? -PH.JUMP_V * 0.98 : -265; player.buf = 0; player.swimCd = nearTop ? 0.25 : 0.2; player.jumping = false;   // salto da água nunca é cortado
+      player.sx = 0.85; player.sy = 1.2; sfx(nearTop ? 'jump' : 'stroke', 0.26); EV.emit('stroke', player.x + player.w / 2, player.y + player.h / 2);
+    } else if (!player.swim && player.buf > 0 && player.coyote > 0 && player.hurtT <= 0 && !player.finishing) {
       player.vy = -PH.JUMP_V; player.coyote = 0; player.buf = 0; player.grounded = false; player.jumping = true;
       player.sx = 0.8; player.sy = 1.25;
       dust(player.x + player.w / 2, player.y + player.h, 5);
@@ -281,7 +321,7 @@
     if (player.vy >= 0) player.jumping = false;
 
     // Pancada do Rei: baixo no ar (não logo após decolar)
-    const canAct = !player.grounded && player.hurtT <= 0 && !player.finishing && !player.dead;
+    const canAct = !player.grounded && !player.swim && !player.dash && player.hurtT <= 0 && !player.finishing && !player.dead;
     if (downPress && canAct && !player.pound && player.y + player.h < surfaceBelow(player.x + player.w / 2, player.y + player.h) - 40) {
       player.pound = 1; player.poundHang = POUND.HANG; player.gliding = false; player.jumping = false;
       player.vx *= 0.2; player.vy = 0; player.sx = 0.8; player.sy = 1.2;
@@ -295,7 +335,15 @@
     }
     if (player.gliding && (!jumpHeld || player.glideT <= 0 || player.grounded || player.hurtT > 0)) player.gliding = false;
 
-    if (player.pound) {
+    if (player.dash > 0) {
+      player.vy = 0;
+    } else if (player.swim && player.swimCd < 0.12 || player.swim && player.vy > -400) {
+      // empuxo: o Rei boia com a cabeça para fora; segurar ↓ mergulha (castanhas e segredos no fundo)
+      if (downHeld) player.vy += 900 * dt;
+      else player.vy += (player.y > surf - 12 ? -560 : 380) * dt;
+      player.vy *= Math.exp(-dt * 3.2);
+      player.vy = clamp(player.vy, -300, downHeld ? 240 : 160);
+    } else if (player.pound) {
       if (player.poundHang > 0) { player.poundHang -= dt; player.vy = 0; player.vx *= Math.exp(-dt * 20); }
       else player.vy = POUND.V;
       if (Math.random() < dt * 40) emit('spark', player.x + player.w / 2 + (Math.random() - 0.5) * 16, player.y + 6, { vx: 0, vy: -60, life: 0.25, col: [1, 0.85, 0.5], size: 0.5 });
@@ -319,6 +367,11 @@
     const goalWall = lv.goal.x + 18;
     const blockedByTruck = !player.finishing && G.collected < lv.required;
     if (blockedByTruck && nx + player.w > goalWall) { nx = goalWall - player.w; player.vx = 0; }
+    // beirada: o bote do tabefe nunca leva o Rei para dentro de um buraco
+    if (player.grounded && player.atk > 0) {
+      const lead = player.vx > 0 ? nx + player.w : nx, gt = groundTop(Math.floor(lead / T));
+      if (gt > player.y + player.h + 40 && !lv.platforms.some((p) => !p.off && lead > p.x && lead < p.x + p.w && Math.abs(p.y - (player.y + player.h)) < 4)) { nx = player.x; player.vx = 0; }
+    }
     const hit = (() => { const old = player.x; player.x = nx; const h = overlapsSolidX(nx); player.x = old; return h; })();
     if (hit) {
       const stepH = player.y + player.h - hit.top;
@@ -364,7 +417,7 @@
     }
     if (player.grounded && !wasGrounded) {
       player.landT = 0.12; sfx('land', 0.2);
-      player.glideT = GLIDE.MAX; player.gliding = false; player.chain = 0;
+      player.glideT = GLIDE.MAX; player.gliding = false; player.chain = 0; player.airDash = true;
       if (player.pound) poundImpact();
     }
 
@@ -387,7 +440,7 @@
       sfx('swing', 0.3);
     }
     // ócio: sem tecla, parado no chão -> dança
-    const busy = dir || jumpHeld || !player.grounded || Math.abs(player.vx) > 5 || player.atk > 0 || player.hurtT > 0;
+    const busy = dir || jumpHeld || !player.grounded || player.swim || Math.abs(player.vx) > 5 || player.atk > 0 || player.hurtT > 0;
     player.idleT = busy ? 0 : player.idleT + dt;
 
     if (player.y > WH + 70 && !player.dead) fall();
@@ -491,7 +544,7 @@
         if (stomp) {
           e.hp -= player.pound ? 2 : 1;
           if (player.pound) { player.pound = 0; G.shake = Math.max(G.shake, 7); }
-          player.chain++; player.glideT = GLIDE.MAX;
+          player.chain++; player.glideT = GLIDE.MAX; player.airDash = true;
           if (player.chain >= 2) {
             toast(`Pisão em cadeia x${player.chain}`, 900); sfx('item', 0.3, 1 + player.chain * 0.12);
             for (let k = 1; k < player.chain && k < 4; k++) G.nuts.push({ x: e.x + e.w / 2 + (k - 2) * 12, y: e.y, golden: player.chain >= 4 && k === 1, taken: false, ph: k, mag: true, vy: -260 - k * 30, drop: true });
@@ -525,7 +578,7 @@
     for (const c of G.cps) {
       c.pulse += dt;
       if (!c.on && player.x + player.w > c.x - 6) {
-        c.on = true; G.lastCp = c; EV.emit('checkpoint', c); toast('Lampião aceso — ponto de retorno', 1700); jingle('checkpoint');
+        c.on = true; G.lastCp = c; EV.emit('checkpoint', c); toast('Lampião aceso: se cair, você volta daqui', 1700); jingle('checkpoint');
         burst('spark', c.x, c.y - 36, 14, 150, { col: [1, 0.8, 0.4], life: 0.7 });
       }
     }
@@ -579,7 +632,7 @@
       const notes = [];
       if (!G.hurts) notes.push('Sem levar dano!');
       try {
-        const key = 'rc-records', all = JSON.parse(localStorage.getItem(key) || '{}'), id = `${G.seed}:${G.stage}`, old = all[id];
+        const key = 'rc-records', all = JSON.parse(localStorage.getItem(key) || '{}'), id = `fase${G.stage}`, old = all[id];
         const beatTime = !old || secs < old.time, beatStars = !old || stars > old.stars;
         if (old && (beatTime || beatStars)) notes.push(beatStars ? 'Novo recorde de estrelas!' : 'Novo recorde de tempo!');
         else if (old) notes.push(`Recorde: ${Math.floor(old.time / 60)}:${String(old.time % 60).padStart(2, '0')}`);
@@ -596,10 +649,9 @@
   }
 
   /* ---------------------------------------------------------------- controle de fluxo */
-  async function beginRun(seedText) {
-    G.seed = seedText ? hashSeed(seedText) : (Math.random() * 1e6) >>> 0;
+  async function beginRun(stage) {
     G.hearts = 3; G.totalNuts = 0; G.totalKills = 0;
-    await startStage(0);
+    await startStage(stage || 0);
   }
   async function startStage(stage) {
     hideAll(); G.state = 'loading'; G.fadeTarget = 0;
@@ -616,10 +668,10 @@
     if (G.state === 'playing') { G.state = 'paused'; show(ui.pause, true); syncMusic(); }
     else if (G.state === 'paused') { G.state = 'playing'; show(ui.pause, false); syncMusic(); }
   }
-  function placeTitlePlayer() { const tx = 470; const ty = surfaceBelow(tx, 0); player.x = tx; player.grounded = true; player.y = ty - player.h; player.invuln = 0; player.vx = 0; player.vy = 0; }
+  function placeTitlePlayer() { const tx = 300; const ty = surfaceBelow(tx, 0); player.x = tx; player.grounded = true; player.y = ty - player.h; player.invuln = 0; player.vx = 0; player.vy = 0; }
   async function toTitle() {
     hideAll(); showHud(false);
-    G.seed = 20261124; await loadStage(2 % 5);
+    await loadStage(0);
     placeTitlePlayer();
     G.state = 'title'; G.fadeTarget = 1; show(ui.title, true); syncMusic();
   }
@@ -761,7 +813,12 @@
     const set = atlas.set, rc = rects, A = RC.PLAYER_ANCHORS;
     if (!A.glide) { A.glide = RC.GLIDE_ANCHORS || [[45, 30, 0, 'head']]; A.pound = [[43, 27, 0, 'ball']]; }
     let anim, n, rate, fy = 47, ax = 40, ay = 47, cidx;
+    let lineRot = 0;
     if (player.hurtT > 0) { anim = 'hurt'; n = 2; rate = 8; ax = 40; ay = 44; }
+    else if (player.vine) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = -player.vine.th * 0.85; }        // pendurado, inclinado com o cipó
+    else if (player.rope) { anim = 'jump'; n = 2; rate = Math.abs(player.vy) > 10 ? 9 : 0.001; ax = 43; ay = 36; }   // subindo: alterna dois quadros
+    else if (player.swim) { anim = 'jump'; n = 4; rate = 6; ax = 43; ay = 36; lineRot = clamp(player.vx / 400, -0.35, 0.35) * player.facing; }
+    else if (player.dash > 0) { anim = 'run'; n = 1; rate = 1; }
     else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 36; }
     else if (player.gliding) { anim = 'glide'; n = 4; rate = 11; ax = 42; ay = 30; }
     else if (!player.grounded) { anim = 'jump'; n = 4; rate = 15; ax = 43; ay = 36; }
@@ -797,15 +854,26 @@
     // origem do sprite: esquerda/topo conforme espelhamento
     const offX = (f > 0 ? ax : r0.w - ax) * S * sx;
     const left = cx - offX, top = cyAnchor - ay * S * sy;
-    if (G.state !== 'title') blob(cx, player.y + player.h, 22, 0.4);
-    R.sprite(set, r0, left, top, f * S * sx, S * sy, { col: [1, 1, 1, flicker], emit: 0.05 });
+    if (G.state !== 'title' && !player.vine && !player.rope && !player.swim) blob(cx, player.y + player.h, 22, 0.4);
+    // rastro de vultos na arrancada e no arremesso do cipó (lê como velocidade, à la Silksong)
+    const fast = player.dash > 0 || (!player.grounded && Math.abs(player.vx) > PH.RUN * 1.25);
+    G.ghostT = (G.ghostT || 0) - 1 / 60;
+    if (fast && G.ghostT <= 0 && G.state === 'playing') { G.ghostT = 0.035; (G.ghosts = G.ghosts || []).push({ r: r0, left, top, sx: f * S * sx, sy: S * sy, a: 0.5, rot: lineRot }); }
+    if (G.ghosts) for (let i = G.ghosts.length - 1; i >= 0; i--) {
+      const gh = G.ghosts[i]; gh.a -= 1 / 60 * 2.6; if (gh.a <= 0) { G.ghosts.splice(i, 1); continue; }
+      R.sprite(set, gh.r, gh.left, gh.top, gh.sx, gh.sy, { col: [0.55, 0.85, 1.4, gh.a * 0.7], lit: 0, emit: 0.6, rot: gh.rot, px: (cx - gh.left), py: (gh.top < top ? top - gh.top : 0) + ay * S * sy });
+    }
+    const spOpt = { col: [1, 1, 1, flicker], emit: 0.05 };
+    if (lineRot) { spOpt.rot = lineRot; spOpt.px = cx - left; spOpt.py = cyAnchor - top; }
+    R.sprite(set, r0, left, top, f * S * sx, S * sy, spOpt);
 
     // coroa: âncora medida por frame (cabeça muda de lugar em cada pose)
     const anc = A[anim][idx];
     const hx = f > 0 ? anc[0] : r0.w - anc[0];
-    const hxw = left + hx * S * sx, hyw = top + anc[1] * S * sy;
+    let hxw = left + hx * S * sx, hyw = top + anc[1] * S * sy;
+    if (lineRot) { const c0 = Math.cos(lineRot), s0 = Math.sin(lineRot), dx0 = hxw - cx, dy0 = hyw - cyAnchor; hxw = cx + dx0 * c0 - dy0 * s0; hyw = cyAnchor + dx0 * s0 + dy0 * c0; }
     const crown = rc.crown;
-    const tilt = clamp(player.vx / PH.RUN, -1, 1) * 0.12 * f + (anim === 'jump' ? Math.sin(player.animT * 10) * 0.05 : anim === 'glide' ? 0.06 * f * Math.sin(player.animT * 7) : 0) + dTilt;
+    const tilt = clamp(player.vx / PH.RUN, -1, 1) * 0.12 * f + (anim === 'jump' ? Math.sin(player.animT * 10) * 0.05 : anim === 'glide' ? 0.06 * f * Math.sin(player.animT * 7) : 0) + dTilt + lineRot;
     R.sprite(set, crown, hxw - (crown.w / 2) * S, hyw - crown.h * S + 3, S, S, { rot: tilt, px: (crown.w / 2) * S, py: crown.h * S - 3, emit: 0.55, col: [1, 1, 1, flicker] });
     G.crownPos = [hxw, hyw];
 
@@ -868,7 +936,7 @@
     const lv = G.lv; if (!lv) return;
     const stage = document.getElementById('stage');
     if (!dbgCv) { dbgCv = document.createElement('canvas'); dbgCv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none'; stage.appendChild(dbgCv); }
-    if (dbgLv !== lv) { dbgLv = lv; dbgWarn = LG.placementIssues(lv); }
+    if (dbgLv !== lv) { dbgLv = lv; dbgWarn = LG.placementIssues ? LG.placementIssues(lv) : []; }
     const w = stage.clientWidth, h = stage.clientHeight;
     if (dbgCv.width !== w) { dbgCv.width = w; dbgCv.height = h; }
     const c = dbgCv.getContext('2d'), k = w / WW, cam = G.camX;
@@ -928,8 +996,8 @@
     // galhos
     const B = G.res.branches;
     lv.platforms.forEach((p, i) => {
-      if (p.x + p.w < cam - 20 || p.x > cam + WW + 20 || p.off) return;
-      const it = B.items[i];
+      if (p.x + p.w < cam - 20 || p.x > cam + WW + 20 || p.off || p.mech) return;
+      const it = B.items[i]; if (!it) return;
       const jx = p.cT > 0 ? Math.sin(t * 90) * 1.6 : 0, jy = p.cT > 0 ? (0.5 - p.cT) * 3 : 0;
       R.sprite(B.set, { x: it.x, y: it.y, w: it.W, h: it.Hh }, p.x - 4 * S + jx, p.y - B.topTexel * S + jy, S, S, { noSnap: false, col: p.crumble ? [1.25, 1.05, 0.8] : [1, 1, 1] });
     });
@@ -1021,7 +1089,7 @@
 
   /* ---------------------------------------------------------------- entrada */
   window.addEventListener('keydown', (e) => {
-    const handled = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyW', 'Escape', 'KeyP', 'Enter', 'KeyJ', 'KeyX', 'KeyK', 'KeyS'];
+    const handled = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyW', 'Escape', 'KeyP', 'Enter', 'KeyJ', 'KeyX', 'KeyK', 'KeyS', 'ShiftLeft', 'ShiftRight', 'KeyL'];
     const t = e.target, onField = !!t && /INPUT|TEXTAREA/.test(t.tagName), onButton = !!t && t.tagName === 'BUTTON';
     if (handled.includes(e.code) && !(onField && e.code !== 'Escape')) e.preventDefault();
     if (e.code === 'Escape' || e.code === 'KeyP') { togglePause(); return; }
@@ -1052,12 +1120,12 @@
   const pad = { prev: {}, navT: 0, on: false };
   function pollPad(dt) {
     const gp = navigator.getGamepads ? [...navigator.getGamepads()].find((g) => g && g.connected) : null;
-    if (!gp) { if (pad.on) { ['PadLeft', 'PadRight', 'PadJump', 'PadDown'].forEach((k) => keys.delete(k)); pad.on = false; pad.prev = {}; } return; }
+    if (!gp) { if (pad.on) { ['PadLeft', 'PadRight', 'PadJump', 'PadDown', 'PadUp', 'PadDash'].forEach((k) => keys.delete(k)); pad.on = false; pad.prev = {}; } return; }
     pad.on = true;
     const btn = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed);
     const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0, DZ = 0.4;
     const now = {
-      a: btn(0), b: btn(1), x: btn(2), start: btn(9),
+      a: btn(0), b: btn(1), x: btn(2), y: btn(3), start: btn(9), dash: btn(5) || btn(7) || btn(3),
       up: btn(12) || ay < -DZ, down: btn(13) || ay > DZ, left: btn(14) || ax < -DZ, right: btn(15) || ax > DZ
     };
     const hit = (k) => now[k] && !pad.prev[k];
@@ -1074,7 +1142,7 @@
     }
     const play = G.state === 'playing';
     const set = (k, v) => (v && play ? keys.add(k) : keys.delete(k));
-    set('PadLeft', now.left); set('PadRight', now.right); set('PadJump', now.a); set('PadDown', btn(13) || ay > 0.6);
+    set('PadLeft', now.left); set('PadRight', now.right); set('PadJump', now.a); set('PadDown', btn(13) || ay > 0.6); set('PadUp', btn(12) || ay < -0.6); set('PadDash', now.dash);
     if (play && hit('a')) player.buf = PH.BUFFER;
     if (play && (hit('x') || hit('b'))) player.atkBuf = ATK.BUF;
     pad.prev = now;
@@ -1088,7 +1156,7 @@
     b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
   });
 
-  $('btn-play').addEventListener('click', () => { const s = $('seed-input').value.trim(); beginRun(s); });
+  $('btn-play').addEventListener('click', () => beginRun(0));
   $('btn-resume').addEventListener('click', togglePause);
   $('btn-pause').addEventListener('click', togglePause);
   $('btn-quit').addEventListener('click', () => { toTitle(); });
@@ -1103,7 +1171,7 @@
   });
   $('done-next').addEventListener('click', () => {
     show(ui.done, false);
-    if (G.stage >= 4) { $('win-stats').innerHTML = `<div><b>${G.totalNuts}</b><span>castanhas guardadas</span></div><div><b>${G.totalKills}</b><span>inimigos pisados</span></div><div><b>${G.seed}</b><span>semente</span></div>`; show(ui.win, true); G.state = 'won'; syncMusic(); if (AU) AU.sting('win'); }
+    if (G.stage >= 4) { $('win-stats').innerHTML = `<div><b>${G.totalNuts}</b><span>castanhas guardadas</span></div><div><b>${G.totalKills}</b><span>inimigos pisados</span></div>`; show(ui.win, true); G.state = 'won'; syncMusic(); if (AU) AU.sting('win'); }
     else startStage(G.stage + 1);
   });
   $('over-retry').addEventListener('click', () => { G.hearts = 3; show(ui.over, false); startStage(G.stage); });
@@ -1126,16 +1194,13 @@
       return;
     }
     renderHearts();
-    const seedParam = q.get('seed');
-    if (seedParam) $('seed-input').value = seedParam;
-    G.seed = 20261124;
-    await loadStage(q.get('stage') ? parseInt(q.get('stage'), 10) : 2);
+    await loadStage(0);
     placeTitlePlayer();
     G.state = 'title'; G.fade = 0; G.fadeTarget = 1;
     ui.loading.classList.remove('visible');
     show(ui.title, true);
     requestAnimationFrame(frame);
-    if (q.get('autostart')) beginRun(seedParam || '');
+    if (q.get('autostart')) beginRun(clamp(parseInt(q.get('stage') || '0', 10) || 0, 0, 4));
   }
 
   /* API para módulos em arquivos próprios (missions.js, fx.js etc.). Getters porque R/atlas nascem no boot. */

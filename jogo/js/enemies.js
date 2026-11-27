@@ -569,6 +569,7 @@
   /* ---------------------------------------------------------------- variedade por fase */
   function diversify(lv) {
     const idx = lv.index || 0;
+    if (lv.handmade) return;                                  // fases feitas à mão já escolhem cada bicho
     const prob = [0, 0.22, 0.34, 0.42, 0.45][Math.min(4, idx)];
     if (!prob) return;
     const r = RC.mulberry32((lv.genSeed || lv.seed || 1) * 7 + idx * 131 + 5);

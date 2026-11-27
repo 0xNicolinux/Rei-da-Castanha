@@ -11,53 +11,56 @@
   const run = { main: [false, false, false, false, false], side: [false, false, false, false, false] };
   let M = null;                                // missão da fase atual
 
-  /* ------------------------------------------------------------ roteiro (pt-BR) */
+  /* ------------------------------------------------------------ roteiro (pt-BR)
+     Vozes (cada fala foi conferida contra estas regras; no máximo ~110 caracteres por fala):
+     Rei: vaidoso e dramático, frases curtas; fala "o Rei" quando se empolga; no fundo é gente boa.
+     Urubu Fofoqueiro: espalha boato sem prova ("Ouvi dizer..."), erra tudo com total confiança.
+     Capanga Ursinho: medroso e mal pago; só quer bater o ponto e ir embora.
+     Mel: comerciante, transforma tudo em negócio. Noz: fala pouco, seca, certeira.
+     Gambá: caminhoneiro de monossílabos. Barão Urso: astro frustrado, carente e exagerado. */
   const L = (e, t) => ({ e, t });             // fala com emoção: angry | happy | shock
   const D = (who, portrait, ...lines) => ({ who, portrait, lines });
   const CARDS = [
-    ['Na floresta existe uma lei mais antiga que as árvores.', 'Quem guarda a castanha guarda o reino'],
-    ['Um rei sem castanhas é só um homem com coroa.', 'Ato II · A fúria vira rock'],
-    ['Todo resgate tem um preço. A Mel já fez o orçamento.', 'Ato III · As duas irmãs'],
-    ['Sem luz, até o medo tropeça.', 'Ato IV · Estrada escura'],
-    ['No festival sob a lua, só um sai com o amplificador.', 'Ato V · Duelo no palco']
+    ['Toda manhã o Rei conta suas castanhas.', 'Hoje a conta deu zero'],
+    ['Para encarar um astro do rock, o Rei precisa de uma guitarra.', 'As peças estão espalhadas pela mata'],
+    ['Ninguém atravessa o Cipoal andando.', 'Lá, quem manda é o cipó'],
+    ['A gangue apagou os lampiões e levantou as pontes.', 'O caminhão do Gambá só anda no claro'],
+    ['Lua cheia, palco montado.', 'O Barão já está afinando']
   ];
   const INTRO = [
-    [D('Rei', 'rei', L('shock', 'Doze mil castanhas. Evaporaram.')), D('Urubu Fofoqueiro', 'corvo', 'Dizem por aí que foi um tigre-dente-de-sabre.'),
-      D('Rei', 'rei', 'Tigre não usa saco de juta, Urubu.'), D('Urubu Fofoqueiro', 'corvo', '...Dizem que usa.')],
-    [D('Rei', 'rei', L('angry', 'O Rei não persegue ladrão com educação.'), 'O Rei persegue com amplificador.'),
-      D('Urubu Fofoqueiro', 'corvo', 'Dizem que o Barão só perde no palco.'), D('Rei', 'rei', 'Então o Rei precisa de uma guitarra.'),
-      D('Urubu Fofoqueiro', 'corvo', 'Você é um esquilo.'), D('Rei', 'rei', L('happy', 'Um esquilo com repertório.'))],
-    [D('Irmã Mel', 'irma1', 'Rei! Antes de soltar a gaiola, vamos falar de preço?'), D('Rei', 'rei', 'Estou te salvando.'),
-      D('Irmã Mel', 'irma1', 'Resgate básico ou premium?'), D('Irmã Noz', 'irma2', 'Mel.'), D('Irmã Mel', 'irma1', 'Só pergunto.')],
-    [D('Gambá', 'texugo', 'Sem luz.'), D('Rei', 'rei', 'A gangue apagou os lampiões da estrada.'), D('Gambá', 'texugo', 'Eu dirijo.'),
-      D('Rei', 'rei', 'O Rei acende. Você dirige.'), D('Gambá', 'texugo', 'Devagar.'), D('Rei', 'rei', L('happy', 'Com estilo.'))],
-    [D('Rei', 'rei', L('angry', 'Barão. As castanhas.'))]
+    [D('Rei', 'rei', L('shock', 'Minha despensa... vazia! Doze mil castanhas!')), D('Urubu Fofoqueiro', 'corvo', 'Ouvi dizer que foi um tigre-dente-de-sabre.'),
+      D('Rei', 'rei', 'Tigre não carrega saco de juta, Urubu.'), D('Urubu Fofoqueiro', 'corvo', 'Esse carrega. É um tigre organizado.'),
+      D('Rei', 'rei', L('angry', 'Olha lá na frente! Um urso fugindo com o MEU saco!'))],
+    [D('Rei', 'rei', 'Se o Barão quer palco, o Rei sobe no palco.'), D('Urubu Fofoqueiro', 'corvo', 'Com o quê? Você nem tem guitarra.'),
+      D('Rei', 'rei', 'Corda lá nas copas, palheta no fundo do lago...'), D('Urubu Fofoqueiro', 'corvo', 'E o amplificador?'),
+      D('Rei', 'rei', L('happy', 'Do outro lado de uma ponte levantada. Claro que sim.'))],
+    [D('Urubu Fofoqueiro', 'corvo', 'As irmãs estão presas em gaiolas, penduradas no Cipoal.'), D('Rei', 'rei', 'E como se chega lá?'),
+      D('Urubu Fofoqueiro', 'corvo', 'Pendurado também. Ouvi dizer que o chão acabou.'), D('Rei', 'rei', L('happy', 'Ótimo. O Rei adora um cipó.'))],
+    [D('Gambá', 'texugo', 'Estrada escura.'), D('Rei', 'rei', 'E com as pontes levantadas. A gangue caprichou.'), D('Gambá', 'texugo', 'Eu dirijo.'),
+      D('Rei', 'rei', 'E o Rei abre caminho. Combinado?'), D('Gambá', 'texugo', 'Devagar.')],
+    [D('Irmã Mel', 'irma1', 'O palco é logo depois do lago. Ingresso eu consigo pela metade.'), D('Rei', 'rei', 'Eu sou a atração, Mel.'),
+      D('Irmã Noz', 'irma2', 'Ele vai tocar.'), D('Rei', 'rei', L('angry', 'Segura o baixo, Noz. O show vai começar.'))]
   ];
-  const BOSS_INTRO = [D('Barão Urso', 'barao', 'Majestade! Bem-vindo ao meu recital particular.'), D('Rei', 'rei', 'Devolve as castanhas, Barão.'),
-    D('Barão Urso', 'barao', 'Castanhas? Que vulgar. Eu sequestrei a ATENÇÃO.'), D('Rei', 'rei', 'Você sequestrou doze mil castanhas.'), D('Barão Urso', 'barao', 'Detalhes são para os pequenos.')];
-  const RHYME = [D('Barão Urso', 'barao', L('angry', 'Sou o Barão, dono do refrão, e você é só um caminhão!'), 'Quer dizer... um grão.'),
-    D('Barão Urso', 'barao', L('angry', 'Eu rimo com ladrão, com camarão, com Napoleão!'), 'Com Napoleão não rima, mas a plateia já aplaudiu.')];
+  const BOSS_INTRO = [D('Barão Urso', 'barao', 'Majestade! Bem-vindo ao meu show particular.'), D('Rei', 'rei', 'Cadê minhas castanhas, Barão?'),
+    D('Barão Urso', 'barao', 'Eu precisava de público. E nada lota um show como castanha de graça.'), D('Rei', 'rei', 'Castanha de graça... com a castanha DOS OUTROS.'),
+    D('Barão Urso', 'barao', L('angry', 'Detalhe! Que comece o duelo!'))];
+  const RHYME = [D('Barão Urso', 'barao', L('angry', 'Eu sou o Barão, o dono do refrão! E você é só... um grão!')),
+    D('Barão Urso', 'barao', L('angry', 'Rimo com trovão, com furacão, com... feijão!'), 'Feijão foi fraco. A plateia percebeu.')];
   const DONE = [
-    [D('Rei', 'rei', "Leia comigo: 'Festival sob a Lua. Atração principal: Barão Urso'."), D('Urubu Fofoqueiro', 'corvo', 'Barão Urso... o famoso bandido do Egito.'),
-      D('Rei', 'rei', 'Urubu. Ele é um urso.'), D('Urubu Fofoqueiro', 'corvo', 'Dizem que é do Egito.')],
-    [D('Rei', 'rei', L('happy', 'Corda, palheta e amplificador. Falta só o nome da banda.')), D('Rei', 'rei', 'Rei da Castanha e os Trovões de Inverno.'), D('Urubu Fofoqueiro', 'corvo', 'Dizem que já tem fã-clube.')],
-    [D('Irmã Mel', 'irma1', 'Chegamos. Desconto de 20% no frete, por conta do susto.'), D('Rei', 'rei', 'Eu não cobrei nada.'), D('Irmã Mel', 'irma1', 'Então o desconto é maior ainda.'),
-      D('Irmã Noz', 'irma2', 'Eu toco baixo, se alguém precisar de um palco.')],
-    [D('Gambá', 'texugo', 'Chegamos.'), D('Rei', 'rei', 'Só isso? Sem discurso?'), D('Gambá', 'texugo', 'Só.')],
-    [D('Barão Urso', 'barao', L('shock', 'Nunca me chamaram para o festival. Nem para cantar o parabéns.')), D('Rei', 'rei', 'Você roubou doze mil castanhas por isso?'),
-      D('Barão Urso', 'barao', 'Foi um desvio de carreira.'), D('Rei', 'rei', 'O Rei não perdoa. O Rei divide.'), D('Barão Urso', 'barao', 'Dividir? Isso é... legal?'),
-      D('Rei', 'rei', 'Você carrega o amplificador.'), D('Barão Urso', 'barao', L('happy', 'Roadie. Meu sonho de infância.')), D('Rei', 'rei', 'Seu sonho de infância era roubar.'), D('Barão Urso', 'barao', 'Era roadie. O resto foi ansiedade.')]
+    [D('Rei', 'rei', "'Festival Sob a Lua. Atração principal: Barão Urso.'"), D('Rei', 'rei', 'Ele roubou meu estoque pra pagar um show?'),
+      D('Urubu Fofoqueiro', 'corvo', 'Ouvi dizer que ele é famoso no Egito.'), D('Rei', 'rei', 'Ele é um urso, Urubu.'), D('Urubu Fofoqueiro', 'corvo', 'Um urso famoso no Egito.')],
+    [D('Rei', 'rei', L('happy', 'Corda, palheta e amplificador. Só falta a banda.')), D('Urubu Fofoqueiro', 'corvo', 'Ouvi dizer que duas irmãs tocam muito. Estão presas no Cipoal.'),
+      D('Rei', 'rei', 'Você ouve tudo, né?'), D('Urubu Fofoqueiro', 'corvo', 'É meu único talento.')],
+    [D('Irmã Mel', 'irma1', 'Ufa! O caminhão do Gambá leva a gente até o festival.'), D('Irmã Noz', 'irma2', 'Eu toco baixo.'), D('Rei', 'rei', L('happy', 'E eu toco o terror.'))],
+    [D('Gambá', 'texugo', 'Chegamos.'), D('Rei', 'rei', "Só isso? Nem um 'obrigado, Majestade'?"), D('Gambá', 'texugo', '...Chegamos, Majestade.')],
+    [D('Barão Urso', 'barao', L('shock', 'Ninguém nunca me chamou pra tocar. Nem em aniversário.')), D('Rei', 'rei', 'E aí você roubou doze mil castanhas?'),
+      D('Barão Urso', 'barao', 'Foi uma fase difícil da carreira.'), D('Rei', 'rei', 'O Rei não perdoa. O Rei divide. E você carrega o amplificador.'),
+      D('Barão Urso', 'barao', L('happy', 'Roadie! Meu sonho de infância!'))]
   ];
-  const EPILOGUE = ['Castanha pra todo lado.', 'Fim. Ou o bis'];
-  const TITLE = ['O tronco vazio', 'A fúria vira rock', 'As duas irmãs', 'Estrada escura', 'Duelo no palco'];
-  const SIDE_NAME = ['Voo rasante', 'Pisão em cadeia', 'Pancada tripla', 'Carga intacta', 'Sem rima no rosto'];
-  const SIDE_TXT = [
-    () => `Voo rasante: plane sobre 3 fossos (${Math.min(3, M.cross)}/3)`,
-    () => `Pisão em cadeia: encadeie 4 pisões sem pousar (${Math.min(4, M.bestChain)}/4)`,
-    () => `Pancada tripla: acerte 3 bichos de uma vez (${Math.min(3, M.bestHits)}/3)`,
-    () => `Carga intacta: leve o caminhão sem arranhão${M.truck ? ` (${M.truck.hits} batidas)` : ''}`,
-    () => 'Sem rima no rosto: vença o Barão sem levar dano'
-  ];
+  const EPILOGUE = ['Castanha para todo mundo. Até para o Urubu.', 'Fim. Ou será que tem bis?'];
+  const TITLE = ['O saco de juta', 'Peças da guitarra', 'As duas irmãs', 'Estrada escura', 'Duelo no palco'];
+  const SIDE_NAME = ['Castanhas douradas', 'Castanhas douradas', 'Castanhas douradas', 'Castanhas douradas', 'Castanhas douradas'];
+  const SIDE_TXT = Array.from({ length: 5 }, () => () => `ache as 3 castanhas douradas escondidas (${Math.min(3, M.gold)}/3)`);
 
 
   /* ------------------------------------------------------------ diálogo (HUD ou caixa simples) */
@@ -202,43 +205,36 @@
 
   /* ------------------------------------------------------------ definição das missões */
   function newMission(s, lv) {
-    const g = api(), G = g.G;
-    const m = { s, lv, done: false, doneText: '', items: [], cur: () => 0, max: 1, text: () => '', nHurt: 0, cross: 0, bestChain: 0, bestHits: 0, glideFlag: false, t0: 0 };
-    const lo = Math.max(900, lv.start.x + 700), hi = lv.goal.x - 700;
-    if (s === 0) {                                              // perseguição ao capanga
-      const pts = [0.2, 0.48, 0.76].map((f) => solidX(lo + (hi - lo) * f));
+    const g = api(), mi = lv.mission || {};
+    const m = { s, lv, done: false, doneText: '', items: [], cur: () => 0, max: 1, text: () => '', nHurt: 0, gold: 0, t0: 0 };
+    if (s === 0) {                                              // pega o urso do saco: ele espera em 3 pontos fixos
+      const pts = mi.runner;
       m.pts = pts; m.runner = { x: pts[0], y: gTop(pts[0]), state: 'wait', catches: 0, dir: 1, leak: 0, t: 0 };
       m.flyer = null;
       m.max = 3; m.cur = () => m.runner.catches;
-      m.text = () => (m.flyer ? 'Pegue o panfleto que ele largou' : `Alcance o capanga e dê um tabefe (${m.runner.catches}/3)`);
-    } else if (s === 1) {                                       // guitarra: corda (alto), palheta (laje), amplificador (emboscada)
-      const sec = (lv.secrets || []).filter((q) => /galho_alto|nicho_copa|nicho/.test(q.type) && q.x > lo && q.x < hi).sort((a, b) => a.y - b.y)[0];
-      const ax = sec ? sec.x + sec.w / 2 : solidX(lo + (hi - lo) * 0.2), ay = sec ? sec.y - 36 : gTop(ax) - 36;
-      const corda = { kind: 'item_corda', label: 'corda', x: ax, y: ay, hidden: false, falling: false, got: false, hint: 'corda (galho alto: pule, pule de novo e plane)' };
-      const flat = findFlat(lv, 8, 0.4, 0.6, true) || { x0: solidX((lo + hi) / 2), x1: solidX((lo + hi) / 2) + 200, y: gTop(solidX((lo + hi) / 2)) };
-      const sx = Math.round((flat.x0 + flat.x1) / 2 / 32) * 32 + 16;
-      const palheta = { kind: 'item_palheta', label: 'palheta', x: sx, y: flat.y - 24, hidden: true, falling: false, got: false, hint: 'palheta (Pancada do Rei na laje rachada)' };
-      const ar = findFlat(lv, 15, 0.7, 0.9, true) || findFlat(lv, 11, 0.6, 1, false);
-      const amp = { kind: 'item_amp', label: 'amplificador', x: ar ? (ar.x0 + ar.x1) / 2 : solidX(hi - 300), y: 0, hidden: true, falling: false, got: false, hint: 'amplificador (vença a emboscada)' };
-      m.items = [corda, palheta, amp]; m.slabAt = { x: sx, y: flat.y }; m.arenaAt = ar;
+      m.text = () => (m.flyer ? 'Pegue o papel que o urso largou' : `Alcance o urso do saco e dê um tabefe (${m.runner.catches}/3)`);
+    } else if (s === 1) {                                       // guitarra: corda (copa), palheta (lago), amplificador (ilha)
+      m.items = [
+        { kind: 'item_corda', label: 'corda', x: mi.corda.x, y: mi.corda.y, got: false, hint: 'corda (nas copas)' },
+        { kind: 'item_palheta', label: 'palheta', x: mi.palheta.x, y: mi.palheta.y, got: false, hint: 'palheta (fundo do lago)' },
+        { kind: 'item_amp', label: 'amplificador', x: mi.amp.x, y: mi.amp.y, got: false, hint: 'amplificador (depois da ponte)' }
+      ];
       m.max = 3; m.cur = () => m.items.filter((i) => i.got).length;
-      m.text = () => 'Falta: ' + m.items.filter((i) => !i.got).map((i) => i.hint).join(' · ');
+      m.text = () => 'Falta: ' + m.items.filter((i) => !i.got).map((i) => i.hint).join(', ');
     } else if (s === 2) {                                       // gaiolas penduradas + fuga
-      const an = [anchors(1, lv)[0], anchors(1, lv)[0]];
-      const xs = [solidX(lo + (hi - lo) * 0.3), solidX(lo + (hi - lo) * 0.55)];
-      m.cap = xs.map((x, i) => ({ name: i ? 'npc_irma2' : 'npc_irma1', x, foot: gTop(x), freed: false, state: 'hang', vy: 0, fy: 0, i }));
-      m.trail = []; m.chase = null; m.escapeStarted = false;
+      m.cap = mi.cages.map((c, i) => ({ name: i ? 'npc_irma2' : 'npc_irma1', x: c.x, foot: c.foot, freed: false, state: 'hang', vy: 0, fy: 0, i }));
+      m.trail = []; m.chase = null; m.escapeStarted = false; m.escapeEnd = mi.escapeEnd;
       m.max = 2; m.cur = () => m.cap.filter((c) => c.freed).length;
-      m.text = () => (m.escapeStarted ? 'FUJA! Chegue ao caminhão antes da gangue' : `Salte e bata na corda das gaiolas (${m.cur()}/2)`);
+      m.text = () => (m.escapeStarted ? 'Corra para o caminhão! A gangue vem atrás' : `Pule e dê um tabefe nas gaiolas (${m.cur()}/2)`);
     } else if (s === 3) {                                       // escolta do caminhão
-      const n = 7, step = (hi - lo + 300) / n;
-      m.lamps = Array.from({ length: n }, (_, i) => { const x = solidX(lo - 150 + step * (i + 0.6)); return { x, y: gTop(x), lit: false, i, amb: i === 2 || i === 5 }; });
+      m.lamps = mi.lamps.map((x, i) => ({ x, y: gTop(x), lit: false, i, amb: mi.ambush.includes(i) }));
+      const n = m.lamps.length;
       m.truck = { x: lv.start.x + 160, y: gTop(lv.start.x + 160), hits: 0, hitCd: 0, why: '', moving: 0, wob: 0 };
       m.max = n; m.cur = () => m.lamps.filter((l) => l.lit).length;
-      m.text = () => `Acenda os lampiões e limpe a estrada (${m.cur()}/${n})${m.truck.why ? ' · ' + m.truck.why : ''}`;
+      m.text = () => `Acenda os lampiões (${m.cur()}/${n})${m.truck.why ? '. ' + m.truck.why : ''}`;
     } else {                                                    // chefe no palco
       m.boss = null; m.spawned = false; m.hurtAtBoss = 0;
-      m.max = 1; m.cur = () => (m.done ? 1 : 0); m.text = () => 'Derrote o Barão no palco!';
+      m.max = 1; m.cur = () => (m.done ? 1 : 0); m.text = () => 'Vença o Barão no palco';
     }
     return m;
   }
@@ -248,7 +244,7 @@
     if (run.side[s]) return;
     run.side[s] = true;
     if (g.G.hearts < g.G.maxHearts) { g.G.hearts++; g.renderHearts(); }
-    cheer(`Extra: ${SIDE_NAME[s]}! +1 coração`);
+    cheer('As 3 castanhas douradas! +1 coração');
     g.burst('spark', g.player.x + 10, g.player.y, 16, 260, { col: [1, 0.5, 0.6], life: 0.7 });
     objective();
   }
@@ -258,9 +254,7 @@
     const g = api();
     cheer('Missão cumprida: ' + TITLE[M.s]);
     g.burst('spark', g.player.x + 10, g.player.y, 24, 300, { col: [1, 0.85, 0.4], life: 0.8 });
-    if (M.s === 3 && M.truck.hits === 0) awardSide();
-    if (M.s === 4 && M.nHurt === M.hurtAtBoss) awardSide();
-    M.doneText = M.s === 4 ? 'Pronto! Pegue as castanhas no caminhão.' : 'Pronto! Vá ao caminhão.';
+    M.doneText = M.s === 4 ? 'Pegue as castanhas e suba no caminhão' : 'Agora é só chegar ao caminhão';
     objective();
     const s = M.s;
     setTimeout(async () => {
@@ -274,11 +268,11 @@
     for (let i = 0; i < 18; i++) G.nuts.push({ x: px - 260 + i * 30, y: -20 - (i % 4) * 30, golden: i % 6 === 0, taken: false, ph: 0, mag: false, vy: 40, drop: true });
   }
   const CATCH = [
-    [D('Capanga Ursinho', 'capanga', 'Foi um tapa ou uma carícia violenta?'), D('Rei', 'rei', 'Foi um aviso de doze mil castanhas.')],
-    [D('Capanga Ursinho', 'capanga', 'Meu contrato não cobre tapa duplo.')],
-    [D('Capanga Ursinho', 'capanga', L('shock', 'Tá bom! O chefe ia me demitir de qualquer jeito.'), 'Toma o panfleto. Não diz que fui eu.')]
+    [D('Capanga Ursinho', 'capanga', L('shock', 'Ai! Calma, eu só trabalho aqui!')), D('Rei', 'rei', 'Então trabalha devolvendo.')],
+    [D('Capanga Ursinho', 'capanga', 'De novo não... meu turno acabou faz uma hora.')],
+    [D('Capanga Ursinho', 'capanga', L('shock', 'Tá bom, tá bom! Foi o Barão.'), 'Tá tudo nesse papel. Não conta que fui eu.')]
   ];
-  const PART_LINE = { item_corda: 'Corda. Prata pura, afinação impura.', item_palheta: 'Palheta de pedra. Pesada como as intenções do Rei.', item_amp: L('happy', 'Onze no volume. Onze é o novo dez.') };
+  const PART_LINE = { item_corda: 'Corda de cipó trançado. Afinada pelo vento.', item_palheta: 'Uma pedrinha lisa do fundo do lago. Serve de palheta!', item_amp: L('happy', 'Um amplificador! Quem larga isso numa ilha?') };
 
   /* ------------------------------------------------------------ eventos */
   EV.on('stageLoaded', (lv) => {
@@ -290,16 +284,8 @@
     g.G.finishBlock = () => {
       if (!M || M.done) return null;
       if (M.s === 4 && !M.boss) return null;
-      return M.s === 4 ? 'O Barão ainda está no palco!' : `Missão pendente: ${TITLE[M.s]}`;
+      return M.s === 4 ? 'O Barão ainda está no palco!' : `Antes do caminhão: ${M.text().toLowerCase()}`;
     };
-    if (s === 1) {                                              // laje e emboscada nascem depois que as props carregam
-      const slab = RC.props && RC.props.addSlab(M.slabAt.x, M.slabAt.y, (c) => { const it = M.items[1]; it.hidden = false; it.falling = true; it.x = c.x; it.y = c.y - 40; it.vy = -320; });
-      if (M.arenaAt && RC.setpieces) {
-        const a = M.arenaAt;
-        for (let i = g.G.enemies.length - 1; i >= 0; i--) { const e = g.G.enemies[i]; if (e.x + e.w > a.x0 - 80 && e.x < a.x1 + 80) g.G.enemies.splice(i, 1); }
-        RC.setpieces.addArena({ x0: a.x0, x1: a.x1, y: a.y, waves: 2, onClear: () => { const it = M.items[2]; it.x = (a.x0 + a.x1) / 2; it.y = a.y - 90; it.hidden = false; it.falling = true; it.vy = -200; } });
-      }
-    }
     objective();
   });
   EV.on('stageStart', (stage) => {
@@ -308,7 +294,7 @@
     intro(stage);
   });
   EV.on('playerHurt', () => { if (M) { M.nHurt++; objective(); } });
-  EV.on('poundHits', (n) => { if (M) { M.bestHits = Math.max(M.bestHits, n); if (M.s === 2 && n >= 3) awardSide(); else objective(); } });
+  EV.on('nutTaken', (n) => { if (M && n.secret) { M.gold++; api().toast(`Castanha dourada! ${Math.min(3, M.gold)}/3`, 1500); if (M.gold >= 3) awardSide(); else objective(); } });
   EV.on('bossDefeated', () => { if (M && M.s === 4) completeMain(); });
   EV.on('finish', () => { if (M && M.s === 4 && RC.hud && RC.hud.card) setTimeout(() => RC.hud.card(EPILOGUE[0], EPILOGUE[1], 5200), 900); });
 
@@ -324,21 +310,12 @@
       const sb = g.surfaceBelow(it.x, it.y - 16);
       if (it.y > sb - 22 && it.vy > 0) { it.y = sb - 22; it.vy = 0; it.falling = false; }
     };
-    // desafios extras
-    if (s === 0) {
-      const col = Math.floor((P.x + P.w / 2) / 32), overPit = g.groundTop(col) > 1e8;
-      if (P.gliding && overPit) M.glideFlag = true;
-      if (P.grounded) { if (M.glideFlag && !overPit) { M.cross++; M.glideFlag = false; objective(); if (M.cross >= 3) awardSide(); } else if (!overPit) M.glideFlag = false; }
-    } else if (s === 1) {
-      if (P.chain > M.bestChain) { M.bestChain = P.chain; objective(); if (M.bestChain >= 4) awardSide(); }
-    }
-
     if (s === 0) {
       const r = M.runner; r.t += dt;
       if (r.state === 'flee' || r.state === 'gone') {
         const tx = r.state === 'gone' ? lv.goal.x + 400 : M.pts[r.catches];
         r.x += Math.min(340 * dt, Math.abs(tx - r.x)) * Math.sign(tx - r.x || 1);
-        const gt = gTop(r.x); if (gt < 1e8) r.y = gt;
+        const gt = RC.mech ? RC.mech.solidAt(r.x) : gTop(r.x); if (gt !== null && gt < 1e8) r.y = gt; else { const w = RC.mech && RC.mech.waterAt(r.x, 1e4); if (w !== null && w !== undefined) r.y = w + 18; }
         r.leak -= dt; if (r.leak <= 0 && r.state === 'flee') { r.leak = 0.5; G.nuts.push({ x: r.x - 18, y: r.y - 34, golden: false, taken: false, ph: 0, mag: false, vy: -140, drop: true }); }
         if (Math.abs(tx - r.x) < 4) { if (r.state === 'gone') r.state = 'away'; else r.state = 'wait'; }
       } else if (r.state === 'wait') {
@@ -358,7 +335,7 @@
       }
       if (M.flyer) { fall(M.flyer); pickup(M.flyer, () => completeMain()); }
     } else if (s === 1) {
-      for (const it of M.items) { fall(it); pickup(it, () => { say([D('Rei', 'rei', PART_LINE[it.kind])]); if (M.cur() >= M.max) completeMain(); }); }
+      for (const it of M.items) { pickup(it, () => { say([D('Rei', 'rei', PART_LINE[it.kind])]); if (M.cur() >= M.max) completeMain(); }); }
     } else if (s === 2) {
       for (const c of M.cap) {
         if (c.state === 'hang') {
@@ -372,7 +349,7 @@
             g.burst('spark', c.x, c.foot - 40, 26, 320, { col: [1, 0.85, 0.5], life: 0.8 });
             g.burst('leaf', c.x, c.foot - 30, 8, 260, { name: 'crate_piece_1', g: 900, vr: 10, life: 1 });
             M.trail.push({ name: c.name, x: c.x, y: c.foot });
-            say(c.i ? [D('Irmã Noz', 'irma2', 'Eu ouvia uma guitarra no vento. Era você?'), D('Rei', 'rei', L('happy', 'Sempre é o Rei.'))] : [D('Irmã Mel', 'irma1', 'Foi pancada de resgate premium, né? Deu pra perceber.')]);
+            say(c.i ? [D('Irmã Noz', 'irma2', 'Valeu.'), D('Rei', 'rei', 'Só isso?'), D('Irmã Noz', 'irma2', 'Valeu mesmo.')] : [D('Irmã Mel', 'irma1', 'Até que enfim! Pelo resgate, te dou desconto no frete.'), D('Rei', 'rei', 'Eu não cobrei nada.'), D('Irmã Mel', 'irma1', 'Então o desconto é maior ainda.')]);
             objective();
             if (M.cur() >= M.max) startEscape();
           }
@@ -386,9 +363,15 @@
         f.dir = h[0] > f.x + 1 ? 1 : h[0] < f.x - 1 ? -1 : (f.dir || 1);
       });
       if (M.chase && !M.done) {
-        const c = M.chase; c.t += dt; c.x += (205 + Math.min(40, c.t * 1.6)) * dt;
-        if (c.x + 34 > P.x && !P.dead) { g.hurt(c.x, true); c.x = P.x - 440; g.toast('A gangue te alcançou!', 1200); }
-        if (P.x + P.w / 2 > lv.goal.x - 320) { M.chase = null; completeMain(); }
+        const c = M.chase; c.t += dt; c.x += (175 + Math.min(30, c.t * 1.2)) * dt;
+        c.x = Math.max(c.x, P.x - 700);                          // nunca fica longe demais: a pressão continua
+        if (c.x + 34 > P.x && !P.dead) {                         // alcançou: derruba castanhas e empurra, sem tirar coração
+          const lose = Math.min(5, G.collected); G.collected -= lose; g.renderNuts(); c.x = P.x - 460;
+          P.vx = 320; P.vy = -360; P.grounded = false; G.shake = Math.max(G.shake, 8); g.sfx('hurt', 0.3);
+          for (let k = 0; k < lose; k++) G.nuts.push({ x: P.x + 40 + k * 18, y: P.y, golden: false, taken: false, ph: k, mag: false, vy: -300, drop: true });
+          g.toast(lose ? `A gangue te alcançou! Caíram ${lose} castanhas` : 'A gangue te alcançou!', 1400);
+        }
+        if (P.x + P.w / 2 > M.escapeEnd) { M.chase = null; completeMain(); }
       }
     } else if (s === 3) {
       const T = M.truck; T.hitCd -= dt;
@@ -399,7 +382,7 @@
           const ex = solidX(l.x + 340);
           const flat = [-48, 0, 48].every((o) => gTop(ex + o) === gTop(ex));
           if (flat) for (let k = 0; k < 2; k++) { const t2 = k ? 'hopper' : 'ant'; const e = g.makeEnemy({ type: t2, left: ex - 90 + k * 20, right: ex + 90 + k * 20, y: gTop(ex), speed: 80 }, 7 + k); G.enemies.push(e); }
-          say([D('Capanga Ursinho', 'capanga', 'Ninguém avisou que o caminhão tinha segurança!'), D('Gambá', 'texugo', 'Eu.')]);
+          say([D('Capanga Ursinho', 'capanga', 'Ninguém falou que o caminhão tinha segurança!'), D('Gambá', 'texugo', 'Eu falei.')]);
         }
         objective();
       }
@@ -407,11 +390,12 @@
       let why = '';
       const ahead = M.lamps.find((l) => !l.lit && l.x > T.x - 20 && l.x < T.x + 190);
       const block = G.enemies.find((e) => !e.dead && e.x + e.w > T.x - 30 && e.x < T.x + 260 && Math.abs((e.y + e.h) - T.y) < 80);
-      if (ahead) why = 'estrada escura: acenda o lampião'; else if (block) why = 'estrada bloqueada: limpe os bichos'; else if (P.x < T.x + 60) why = 'vá na frente do caminhão';
+      const road = !RC.mech || [120, 200, 290].every((o) => RC.mech.solidAt(T.x + o) !== null);
+      if (ahead) why = 'Estrada escura: acenda o lampião'; else if (!road) why = 'A ponte está levantada: abra o caminho'; else if (block) why = 'Bichos na estrada: tire eles do caminho'; else if (P.x < T.x + 60) why = 'Vá na frente do caminhão';
       if (why !== T.why) { T.why = why; objective(); }
       T.moving = why ? 0 : 1;
       if (T.moving) {
-        T.x += 135 * dt; const gt = gTop(T.x + 60); if (gt < 1e8) T.y += (gt - T.y) * Math.min(1, dt * 12); else T.y -= 0;
+        T.x += 135 * dt; const gt = RC.mech ? RC.mech.solidAt(T.x + 60) : gTop(T.x + 60); if (gt !== null && gt < 1e8) T.y += (gt - T.y) * Math.min(1, dt * 12);
         T.wob += dt;
       }
       for (const e of G.enemies) if (!e.dead && T.hitCd <= 0 && e.x + e.w > T.x - 60 && e.x < T.x + 90 && Math.abs((e.y + e.h) - T.y) < 60) {
@@ -438,7 +422,7 @@
     M.escapeStarted = true;
     const P = api().player;
     M.chase = { x: P.x - 520, t: 0 };
-    setTimeout(() => say([D('Irmã Mel', 'irma1', 'Eles voltaram. E trouxeram o pessoal do fundo.'), D('Irmã Noz', 'irma2', 'Corre.'), D('Irmã Mel', 'irma1', 'Depois eu cobro.')]), 900);
+    setTimeout(() => say([D('Irmã Mel', 'irma1', 'Ih... a gangue acordou. E trouxe os primos.'), D('Irmã Noz', 'irma2', 'Corre.'), D('Irmã Mel', 'irma1', 'Corre que depois eu cobro!')]), 900);
     objective();
   }
   function sideCheckLate() {}
@@ -465,7 +449,7 @@
     const g = api(); if (!g || !M || !g.rects || g.G.state === 'title') return;
     const vis = (x) => x > cam - 120 && x < cam + g.WW + 120;
     const lv = M.lv;
-    const npc = M.s < 2 ? 'npc_corvo' : null;
+    const npc = M.s < 3 ? 'npc_corvo' : null;
     if (npc) { const x = lv.start.x + 300; if (vis(x)) drawNpc(npc, x, g.surfaceBelow(x, 0), t, -1); }
     if (M.s === 2) for (const c of M.cap) {
       if (!vis(c.x) || c.state === 'free') continue;

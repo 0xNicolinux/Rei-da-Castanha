@@ -453,6 +453,30 @@
       case 'deny':
         blip(t, 'square', 180, 150, 0.1, 0.08 * v); blip(t + 0.12, 'square', 160, 120, 0.14, 0.08 * v);
         break;
+      case 'splash':  // mergulho: chiado de água filtrado + bolha grave
+        noiseHit(t, 0.32, 0.26 * v, sfxBus, 'lowpass', 1300 * p, 0.6);
+        noiseHit(t + 0.03, 0.18, 0.1 * v, sfxBus, 'bandpass', 3200 * p, 1.2);
+        blip(t + 0.04, 'sine', 240 * p, 90, 0.18, 0.16 * v);
+        break;
+      case 'stroke':  // braçada debaixo d'água: bolhas subindo
+        blip(t, 'sine', 300 * p, 620 * p, 0.08, 0.07 * v); blip(t + 0.05, 'sine', 380 * p, 760 * p, 0.07, 0.05 * v);
+        break;
+      case 'dash':    // arrancada: sopro curto e agudo
+        noiseHit(t, 0.14, 0.2 * v, sfxBus, 'highpass', 1800 * p, 0.9);
+        blip(t, 'triangle', 700 * p, 1400 * p, 0.08, 0.06 * v);
+        break;
+      case 'vine':    // agarrar cipó: rangido de fibra
+        blip(t, 'sawtooth', 120 * p, 95 * p, 0.16, 0.05 * v);
+        noiseHit(t, 0.1, 0.08 * v, sfxBus, 'bandpass', 700 * p, 2.5);
+        break;
+      case 'lever':   // alavanca: estalo metálico + engrenagem
+        blip(t, 'square', 420 * p, 210, 0.05, 0.1 * v); blip(t + 0.07, 'square', 330 * p, 160, 0.05, 0.08 * v);
+        noiseHit(t, 0.08, 0.14 * v, sfxBus, 'bandpass', 2200, 1.1);
+        break;
+      case 'thud':    // ponte/tronco caindo no lugar: baque de madeira
+        blip(t, 'sine', 95 * p, 38, 0.32, 0.5 * v);
+        noiseHit(t, 0.22, 0.26 * v, sfxBus, 'lowpass', 600, 0.5);
+        break;
       default: break;
     }
   }
