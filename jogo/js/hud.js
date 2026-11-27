@@ -67,7 +67,7 @@
     if (!el.combo || !(n > 0)) return;
     streak = n | 0;
     el.comboN.textContent = String(streak);
-    el.comboL.textContent = streak === 1 ? 'ABATE' : 'ABATES';
+    el.comboL.textContent = streak === 1 ? 'abate' : 'abates';
     const t = TIERS.find((x) => streak >= x[0]);
     el.comboSub.textContent = sub || (t ? t[1] : '');
     el.combo.classList.toggle('hot', streak >= 4);
@@ -98,7 +98,7 @@
     const P = PORTRAITS[key];
     if (!P) {
       const ch = (speaker || '?').trim().charAt(0).toUpperCase() || '?';
-      return `<svg viewBox="0 0 16 16"><text x="8" y="12" text-anchor="middle" font-family="Lilita One,sans-serif" font-size="11" fill="#ffc931">${ch.replace(/[<&]/g, '')}</text></svg>`;
+      return `<svg viewBox="0 0 16 16"><text x="8" y="12" text-anchor="middle" font-family="Holtwood One SC,serif" font-size="11" fill="#ffc931">${ch.replace(/[<&]/g, '')}</text></svg>`;
     }
     const rows = FACE.map((r) => r.split(''));
     for (const [ry, cx, str] of (P.hat || [])) for (let i = 0; i < str.length; i++) rows[ry][cx + i] = str[i];
@@ -307,7 +307,7 @@
     if (root.id === 'done') {
       const lv = G().lv, stars = root.querySelectorAll('.star.on').length;
       const sub = $('done-sub'), rank = $('done-rank');
-      if (sub && lv) sub.textContent = `Ato ${ROMAN[G().stage] || (G().stage + 1)} · ${lv.name}`;
+      if (sub && lv) sub.textContent = `Ato ${ROMAN[G().stage] || (G().stage + 1)}: ${lv.name}`;
       if (rank) rank.textContent = RANKS[stars] || '';
       for (let i = 0; i < stars; i++) setTimeout(() => { if (root.classList.contains('visible')) sfx('item', 0.5, 1 + i * 0.25); }, 1300 + i * 400);
     }
@@ -337,5 +337,46 @@
       const t = setTimeout(end, ms || 4200);
     });
   }
+  /* ------------------------------------------------------------ toque: bloqueia o menu do sistema e monta o direcional flutuante */
+  (function touchControls() {
+    const stage = $('stage'), zone = $('joy-zone'), joy = $('joy');
+    if (stage) stage.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('#stage')) e.preventDefault(); });
+    document.addEventListener('selectstart', (e) => { if (e.target.closest && e.target.closest('#stage')) e.preventDefault(); });
+    if (!zone || !joy) return;
+    const knob = joy.querySelector('.joy-knob');
+    const KEYS = { l: 'ArrowLeft', r: 'ArrowRight', u: 'PadUp', d: 'ArrowDown' };
+    const keys = () => (RC.game && RC.game.keys) || null;
+    let pid = null, cx = 0, cy = 0, rad = 1, on = {};
+    function put(k, v) { const ks = keys(); if (!ks) return; if (v) ks.add(KEYS[k]); else ks.delete(KEYS[k]); on[k] = v; }
+    function clearKeys() { for (const k of Object.keys(KEYS)) put(k, false); }
+    function rest() { joy.classList.remove('free', 'active'); joy.style.left = joy.style.bottom = ''; knob.style.removeProperty('--kx'); knob.style.removeProperty('--ky'); }
+    function move(e) {
+      let dx = e.clientX - cx, dy = e.clientY - cy;
+      const len = Math.hypot(dx, dy) || 1, k = Math.min(1, len / rad);
+      const nx = dx / len * k, ny = dy / len * k;
+      knob.style.setProperty('--kx', `${nx * rad}px`); knob.style.setProperty('--ky', `${ny * rad}px`);
+      put('l', nx < -0.35); put('r', nx > 0.35); put('u', ny < -0.55); put('d', ny > 0.55);
+    }
+    zone.addEventListener('pointerdown', (e) => {
+      if (pid !== null) return;
+      e.preventDefault(); pid = e.pointerId;
+      try { zone.setPointerCapture(pid); } catch (err) { /* ok */ }
+      const sr = stage.getBoundingClientRect(), jr = joy.getBoundingClientRect(), s = jr.width;
+      rad = s / 2;
+      // a base nasce sob o polegar, sem sair da área do joystick
+      const zr = zone.getBoundingClientRect();
+      cx = Math.min(Math.max(e.clientX, zr.left + rad + 4), zr.right - rad - 4);
+      cy = Math.min(Math.max(e.clientY, zr.top + rad + 4), zr.bottom - rad - 4);
+      joy.classList.add('free', 'active');
+      joy.style.left = `${cx - rad - sr.left}px`; joy.style.bottom = `${sr.bottom - (cy + rad)}px`;
+      move(e);
+    });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId === pid) { e.preventDefault(); move(e); } });
+    const end = (e) => { if (e.pointerId !== pid) return; pid = null; clearKeys(); rest(); };
+    zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end); zone.addEventListener('lostpointercapture', end);
+    window.addEventListener('blur', () => { pid = null; clearKeys(); rest(); });
+  })();
+
   RC.hud = { setObjective, complete, dialogue, banner, combo, card };
 })();

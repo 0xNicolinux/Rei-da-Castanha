@@ -9,4 +9,4 @@ GERADO POR CÓDIGO (próprio do projeto)
 Terreno, plataformas de galho, florestas de fundo, céu, coroa, caminhão, partículas e toda a iluminação/shaders são gerados em tempo de execução (js/world.js, js/art.js, js/gl.js).
 
 FONTES (SIL Open Font License 1.1)
-Lilita One, Pixelify Sans e Nunito, na pasta fonts/.
+Holtwood One SC (Vernon Adams, Cyreal), Pixelify Sans e Nunito, na pasta fonts/. Lilita One também continua em fonts/, mas a interface não a usa mais.

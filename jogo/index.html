@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0f1e">
-  <meta name="description" content="Rei da Castanha: plataforma 2D com fases procedurais, iluminação dinâmica e estética HD-2D.">
+  <meta name="description" content="Rei da Castanha: plataforma 2D em cinco fases feitas à mão, com água, cipós, pontes e um duelo de rock.">
   <title>Rei da Castanha — Pânico na Floresta</title>
   <link rel="icon" href="assets/castanha-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="assets/castanha-180.png">
@@ -18,32 +18,29 @@
 
     <div id="hud">
       <div class="hud-left">
-        <div class="hud-plate">
-          <div class="hud-nuts"><i class="acorn-ico" aria-hidden="true"></i><b id="hud-nuts">00</b><span id="hud-need">meta 0</span></div>
-          <div id="hud-hearts" class="hud-hearts" role="img" aria-label="Corações"></div>
-          <div id="hud-chain" class="hud-chain" aria-hidden="true"><i></i><i></i><i></i></div>
-        </div>
+        <div class="hud-nuts"><i class="acorn-ico" aria-hidden="true"></i><b id="hud-nuts">00</b><span id="hud-need">meta 0</span></div>
+        <div id="hud-hearts" class="hud-hearts" role="img" aria-label="Vida"></div>
+        <div id="hud-chain" class="hud-chain" aria-hidden="true"><i></i><i></i><i></i></div>
       </div>
       <div id="hud-obj" class="objective" aria-live="polite" hidden>
-        <div class="obj-head"><span class="obj-mark" aria-hidden="true"></span><strong id="obj-title"></strong></div>
+        <strong id="obj-title"></strong>
         <p id="obj-text"></p>
         <small id="obj-extra" class="obj-extra" hidden></small>
         <div class="obj-bar" id="obj-bar"><span id="obj-fill"></span><em id="obj-count"></em></div>
       </div>
       <div class="hud-right">
-        <div id="hud-prog" class="prog" role="img" aria-label="Progresso da fase"><span id="hud-prog-fill"></span><i class="prog-crown"></i><i class="prog-goal"></i></div>
         <div class="hud-tools">
-          <span id="hud-seed" class="seed"></span>
           <button id="btn-sound" class="tool" aria-label="Som" aria-pressed="false" title="Som"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 6h3l4-3v10l-4-3H2z"/><path class="wave" d="M11 5h1v6h-1zM13 3h1v10h-1z"/><path class="mute" d="M11 6l4 4M15 6l-4 4"/></svg></button>
           <button id="btn-pause" class="tool" aria-label="Pausar" title="Pausar (Esc)"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button>
           <button id="btn-full" class="tool" aria-label="Tela cheia" title="Tela cheia"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 2h5v2H4v3H2zM9 2h5v5h-2V4H9zM2 9h2v3h3v2H2zM12 9h2v5H9v-2h3z"/></svg></button>
         </div>
+        <div id="hud-prog" class="prog" role="img" aria-label="Progresso da fase"><span id="hud-prog-fill"></span><i class="prog-crown"></i><i class="prog-goal"></i></div>
       </div>
     </div>
 
     <div id="toast" role="status"></div>
 
-    <div id="combo" class="combo" aria-hidden="true"><b id="combo-n">2</b><span id="combo-l">ABATES</span><em id="combo-sub"></em><i class="combo-t"></i></div>
+    <div id="combo" class="combo" aria-hidden="true"><b id="combo-n">2</b><span id="combo-l">abates</span><em id="combo-sub"></em><i class="combo-t"></i></div>
     <div id="mission-done" class="mission-done" role="status"><span class="md-ribbon"><i></i><b id="md-text">Missão cumprida</b><i></i></span></div>
     <div id="banner" class="banner" role="status"><div class="bn-in"><strong id="bn-title"></strong><span id="bn-sub"></span></div></div>
 
@@ -56,22 +53,34 @@
           <p id="dlg-sr" class="sr" aria-live="polite"></p>
         </div>
         <span id="dlg-next" class="dlg-next" aria-hidden="true"></span>
-        <span class="dlg-hint" aria-hidden="true">Espaço, J ou toque</span>
+        <span class="dlg-hint" aria-hidden="true">Espaço ou toque</span>
       </div>
     </section>
 
     <section id="title" class="overlay" aria-labelledby="title-h">
       <div class="title-block">
-        <p class="title-pre">O Rei perdeu o estoque.</p>
+        <svg class="title-crown" viewBox="0 0 15 9" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 6h15v3H0zM0 1h2v5H0zM2 3h1v3H2zM6 0h3v6H6zM4 3h2v3H4zM9 3h2v3H9zM13 1h2v5h-2zM12 3h1v3h-1z"/></svg>
         <h1 id="title-h"><span class="t-rei">Rei da</span><span class="t-cast">Castanha</span></h1>
         <p class="title-sub">Pânico na floresta</p>
+        <p class="title-pre">O Rei perdeu o estoque inteiro. Atravesse cinco trechos da mata, pise nos ladrões e traga cada castanha de volta.</p>
         <div class="title-actions">
           <button id="btn-play" class="btn primary">Jogar</button>
-          <label class="seed-field"><span>Semente</span><input id="seed-input" type="text" inputmode="text" maxlength="24" placeholder="aleatória" autocomplete="off" spellcheck="false"></label>
         </div>
-        <p class="title-keys"><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta esquerda"><path d="M5 1L1 4l4 3z"/></svg></kbd><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta direita"><path d="M3 1l4 3-4 3z"/></svg></kbd> ou <kbd>A</kbd><kbd>D</kbd> andam <i></i> <kbd>Espaço</kbd> pula <i></i> <kbd>J</kbd> ou <kbd>X</kbd> bate <i></i> <kbd>S</kbd> no ar: Pancada <i></i> <kbd>Esc</kbd> pausa <i></i> aceita controle e toque</p>
       </div>
-      <p class="credits">Sprites: Sunny Land Woods, de Ansimuz (CC0). Fontes: Lilita One, Pixelify Sans e Nunito (SIL OFL). Fases, iluminação e cenários gerados por código.</p>
+      <div class="title-keys" aria-label="Controles">
+        <p class="keys-h">Controles</p>
+        <dl class="keys">
+          <div><dt><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta esquerda"><path d="M5 1L1 4l4 3z"/></svg></kbd><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta direita"><path d="M3 1l4 3-4 3z"/></svg></kbd> ou <kbd>A</kbd><kbd>D</kbd></dt><dd>andar</dd></div>
+          <div><dt><kbd>Espaço</kbd></dt><dd>pular (segure para subir mais; no ar, aperte de novo para planar)</dd></div>
+          <div><dt><kbd>J</kbd> ou <kbd>X</kbd></dt><dd>bater</dd></div>
+          <div><dt><kbd>Shift</kbd> ou <kbd>L</kbd></dt><dd>investida</dd></div>
+          <div><dt><kbd>↑</kbd></dt><dd>agarrar o cipó (Espaço solta)</dd></div>
+          <div><dt>no ar, <kbd>S</kbd></dt><dd>Pancada</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>pausar</dd></div>
+        </dl>
+        <p class="keys-f">Também funciona com controle e toque.</p>
+      </div>
+      <p class="credits">Sprites: Sunny Land Woods, de Ansimuz (CC0). Fontes: Holtwood One SC, Pixelify Sans e Nunito (SIL OFL). Fases desenhadas à mão; luz e cenários pintados por código.</p>
     </section>
 
     <section id="stage-card" class="overlay card-overlay" aria-live="polite">
@@ -82,28 +91,28 @@
       <div class="panel">
         <h2>Jogo pausado</h2>
         <div class="ctrls">
-          <div><h3>Teclado</h3><ul>
-            <li><span><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta esquerda"><path d="M5 1L1 4l4 3z"/></svg></kbd><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta direita"><path d="M3 1l4 3-4 3z"/></svg></kbd> <kbd>A</kbd><kbd>D</kbd></span>andar</li>
-            <li><span><kbd>Espaço</kbd> <kbd>W</kbd></span>pular</li>
-            <li><span><kbd>J</kbd> <kbd>X</kbd> <kbd>K</kbd></span>bater</li>
-            <li><span>no ar: <kbd>Espaço</kbd></span>planar (segure)</li>
-            <li><span>no ar: <kbd>S</kbd> <kbd>↓</kbd></span>Pancada do Rei</li>
-            <li><span><kbd>Esc</kbd> <kbd>P</kbd></span>pausar</li></ul></div>
-          <div><h3>Controle</h3><ul>
-            <li><span><kbd>Direcional</kbd></span>andar</li>
-            <li><span><kbd>A</kbd> <kbd>✕</kbd></span>pular</li>
-            <li><span><kbd>X</kbd> <kbd>B</kbd> <kbd>□</kbd> <kbd>○</kbd></span>bater</li>
-            <li><span>no ar: <kbd>A</kbd> <kbd>✕</kbd></span>planar</li>
-            <li><span>no ar: <kbd>▼</kbd></span>Pancada</li>
-            <li><span><kbd>Start</kbd></span>pausar</li></ul></div>
-          <div><h3>Toque</h3><ul>
-            <li><span><kbd>◀</kbd><kbd>▶</kbd></span>andar</li>
-            <li><span><kbd>Pular</kbd></span>pular</li>
-            <li><span><kbd>Bater</kbd></span>bater</li>
-            <li><span><kbd>▼</kbd></span>Pancada (no ar)</li>
-            <li><span><kbd>II</kbd></span>pausar</li></ul></div>
+          <div class="ctrl-kb"><h3>Teclado</h3><dl class="keys">
+            <div><dt><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta esquerda"><path d="M5 1L1 4l4 3z"/></svg></kbd><kbd><svg class="kb-ar" viewBox="0 0 8 8" aria-label="seta direita"><path d="M3 1l4 3-4 3z"/></svg></kbd> <kbd>A</kbd><kbd>D</kbd></dt><dd>andar</dd></div>
+            <div><dt><kbd>Espaço</kbd></dt><dd>pular; no ar, planar</dd></div>
+            <div><dt><kbd>J</kbd> <kbd>X</kbd></dt><dd>bater</dd></div>
+            <div><dt><kbd>Shift</kbd> <kbd>L</kbd></dt><dd>investida</dd></div>
+            <div><dt><kbd>↑</kbd></dt><dd>agarrar o cipó</dd></div>
+            <div><dt>no ar, <kbd>S</kbd></dt><dd>Pancada</dd></div>
+            <div><dt><kbd>Esc</kbd></dt><dd>pausar</dd></div></dl></div>
+          <div class="ctrl-pad"><h3>Controle</h3><dl class="keys">
+            <div><dt><kbd>Direcional</kbd></dt><dd>andar</dd></div>
+            <div><dt><kbd>A</kbd> <kbd>✕</kbd></dt><dd>pular; no ar, planar</dd></div>
+            <div><dt><kbd>X</kbd> <kbd>B</kbd></dt><dd>bater</dd></div>
+            <div><dt>no ar, <kbd>▼</kbd></dt><dd>Pancada</dd></div>
+            <div><dt><kbd>Start</kbd></dt><dd>pausar</dd></div></dl></div>
+          <div class="ctrl-touch"><h3>Toque</h3><dl class="keys">
+            <div><dt><kbd>Direcional</kbd></dt><dd>andar; para cima, cipó</dd></div>
+            <div><dt><kbd>Pular</kbd></dt><dd>pular; no ar, planar</dd></div>
+            <div><dt><kbd>Bater</kbd></dt><dd>bater</dd></div>
+            <div><dt><kbd>Correr</kbd></dt><dd>investida</dd></div>
+            <div><dt><kbd>Pancada</kbd></dt><dd>só no ar</dd></div></dl></div>
         </div>
-        <p class="ctrl-tip">Pise nos bichos ou bata em sequência: o terceiro golpe é o Combo do Rei. Pisões seguidos sem tocar o chão rendem castanhas extras.</p>
+        <p class="ctrl-tip">Pise nos bichos ou bata três vezes seguidas: o terceiro golpe é o Combo do Rei. Pisões em sequência, sem tocar o chão, rendem castanhas extras.</p>
         <div class="panel-actions"><button id="btn-resume" class="btn primary">Continuar</button><button id="btn-quit" class="btn ghost">Voltar ao menu</button></div>
       </div>
     </section>
@@ -123,7 +132,7 @@
     <section id="over" class="overlay dim" role="dialog" aria-labelledby="over-title">
       <div class="panel">
         <h2 id="over-title">A floresta venceu desta vez</h2>
-        <p>Os corações acabaram. A fase continua a mesma, com a mesma semente.</p>
+        <p>Os corações acabaram. Você volta ao começo desta fase.</p>
         <div class="panel-actions"><button id="over-retry" class="btn primary">Tentar de novo</button><button id="over-menu" class="btn ghost">Voltar ao menu</button></div>
       </div>
     </section>
@@ -139,13 +148,16 @@
 
     <section id="loading" class="overlay visible" aria-live="polite"><p>A floresta está crescendo</p><span class="bar"></span></section>
 
+
     <div class="touch" aria-label="Controles de toque">
-      <div class="touch-move">
-        <button class="touch-btn" data-key="ArrowLeft" aria-label="Andar para a esquerda"><svg viewBox="0 0 12 12"><path d="M8.5 1.5v9L2.5 6z"/></svg></button>
-        <button class="touch-btn" data-key="ArrowRight" aria-label="Andar para a direita"><svg viewBox="0 0 12 12"><path d="M3.5 1.5v9l6-4.5z"/></svg></button>
-        <button class="touch-btn" data-key="ArrowDown" aria-label="Pancada (no ar)"><svg viewBox="0 0 12 12"><path d="M1.5 3.5h9l-4.5 6z"/></svg></button>
+      <div id="joy-zone" class="joy-zone"></div>
+      <div id="joy" class="joy" aria-hidden="true"><i class="joy-base"></i><i class="joy-knob"></i></div>
+      <div class="touch-act">
+        <button class="touch-btn hit" data-key="KeyJ" aria-label="Bater"><span>Bater</span></button>
+        <button class="touch-btn jump" data-key="Space" aria-label="Pular"><span>Pular</span></button>
+        <button class="touch-btn dash" data-key="ShiftLeft" aria-label="Investida"><span>Correr</span></button>
+        <button class="touch-btn slam" data-key="KeyS" aria-label="Pancada (no ar)"><span>Pancada</span></button>
       </div>
-      <div class="touch-act"><button class="touch-btn hit" data-key="KeyJ" aria-label="Bater"><span>Bater</span></button><button class="touch-btn jump" data-key="Space" aria-label="Pular"><span>Pular</span></button></div>
     </div>
   </main>
   <div id="rotate" role="status">Gire o aparelho para jogar</div>
@@ -154,7 +166,7 @@
   <script src="js/sprites-data.js"></script>
   <script src="js/sprites-blender.js"></script>
   <script src="js/sprites-cc0.js"></script>
-  <script src="js/levelgen.js"></script>
+  <script src="js/levels.js"></script>
   <script src="js/gl.js"></script>
   <script src="js/art.js"></script>
   <script src="js/world.js"></script>
@@ -166,6 +178,7 @@
   <script src="js/enemies.js"></script>
   <script src="js/props.js"></script>
   <script src="js/setpieces.js"></script>
+  <script src="js/mechanics.js"></script>
   <script src="js/missions.js"></script>
 </body>
 </html>
