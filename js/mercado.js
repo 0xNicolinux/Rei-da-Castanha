@@ -3,7 +3,7 @@
 (() => {
   'use strict';
   const RATE = { folha: 1, brilho: 6, pedra: 15 };
-  const ICON = { folha: '🍂', brilho: '✨', pedra: '🪨' };
+  const ICON = { folha: '<i class="coin c-folha" aria-hidden="true"></i>', brilho: '<i class="coin c-brilho" aria-hidden="true"></i>', pedra: '<i class="coin c-pedra" aria-hidden="true"></i>' };   // moedas desenhadas em CSS
   const NOME = { folha: ['folha', 'folhas'], brilho: ['brilho', 'brilhos'], pedra: ['pedra', 'pedras'] };
   const MOEDAS = Object.keys(RATE);
   const START = { folha: 24, brilho: 4, pedra: 2 };
@@ -57,7 +57,7 @@
   function renderBolsa(bumped) {
     $('coins').innerHTML = MOEDAS.map((m) =>
       `<li class="${bumped && bumped[m] ? 'bump' : ''}"><span class="ico" aria-hidden="true">${ICON[m]}</span><span class="n">${st.bolsa[m]}</span><span class="l">${NOME[m][1]}</span></li>`).join('');
-    document.querySelectorAll('[data-chip]').forEach((el) => { el.textContent = MOEDAS.map((m) => `${ICON[m]} ${st.bolsa[m]}`).join(' · '); });
+    document.querySelectorAll('[data-chip]').forEach((el) => { el.innerHTML = MOEDAS.map((m) => `<span class="cn">${ICON[m]}${st.bolsa[m]}<span class="vh"> ${NOME[m][1]}</span></span>`).join(''); });
   }
 
   function renderShelf() {
@@ -71,7 +71,7 @@
         <div class="item-body">
           <h4>${p.nome}</h4>
           <p>${p.desc}</p>
-          <div class="tag" aria-label="Preço: ${MOEDAS.map((m) => plural(custo(p.v, m), m)).join(', ou ')}">${MOEDAS.map((m) => `<span>${custo(p.v, m)} ${ICON[m]}</span>`).join('')}</div>
+          <div class="tag" aria-label="Preço: ${MOEDAS.map((m) => plural(custo(p.v, m), m)).join(', ou ')}">${MOEDAS.map((m) => `<span>${custo(p.v, m)}${ICON[m]}</span>`).join('')}</div>
           <button type="button" data-add="${p.id}">Colocar na sacola</button>
         </div>
       </article>`;
@@ -93,7 +93,7 @@
     const v = totalV();
     $('pay').innerHTML = v ? MOEDAS.map((m) => {
       const c = custo(v, m), ok = st.bolsa[m] >= c;
-      return `<button type="button" data-pay="${m}" class="${ok ? '' : 'short'}">Pagar com ${c} ${ICON[m]} <small>${ok ? plural(st.bolsa[m], m) + ' na bolsa' : 'faltam ' + (c - st.bolsa[m])}</small></button>`;
+      return `<button type="button" data-pay="${m}" class="${ok ? '' : 'short'}">Pagar com ${c}${ICON[m]}<span class="vh"> ${NOME[m][c === 1 ? 0 : 1]}</span><small>${ok ? plural(st.bolsa[m], m) + ' na bolsa' : 'faltam ' + (c - st.bolsa[m])}</small></button>`;
     }).join('') : '';
   }
 
@@ -111,7 +111,7 @@
     if (p.unica && d > 0 && novo === atual) $('pay-msg').textContent = 'A Castanha do Rei é de uma por cliente.';
     else $('pay-msg').textContent = '';
     if (btn && novo > atual) {
-      btn.textContent = 'Na sacola ✓'; btn.classList.add('added');
+      btn.textContent = 'Na sacola'; btn.classList.add('added');
       clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = 'Colocar na sacola'; btn.classList.remove('added'); }, 1100);
     }
     renderAll();

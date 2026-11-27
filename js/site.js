@@ -16,12 +16,7 @@
       if (e.isIntersecting) links.forEach((a, i) => a.classList.toggle('on', secs[i] === e.target));
     }), { rootMargin: '-45% 0px -50% 0px' });
     secs.forEach((s) => s && spy.observe(s));
-
-    const rev = new IntersectionObserver((es) => es.forEach((e) => {
-      if (e.isIntersecting) { e.target.classList.add('in'); rev.unobserve(e.target); }
-    }), { rootMargin: '0px 0px -12% 0px' });
-    document.querySelectorAll('.reveal').forEach((el) => rev.observe(el));
-  } else document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+  }
 
   /* ---------------------------------------------------------- música */
   const song = $('song'), seek = $('song-seek'), mini = $('mini');
