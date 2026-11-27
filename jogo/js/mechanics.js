@@ -86,7 +86,7 @@
     return false;
   }
   function release(p, vx, vy) {
-    p.vine = null; p.rope = null; p.regrab = 0.32; p.vx = vx; p.vy = vy; p.jumping = true; p.airDash = true;
+    p.vine = null; p.rope = null; p.regrab = 0.32; p.vx = vx; p.vy = vy; p.jumping = true; p.airDash = true; p.airJump = true;
     p.sx = 0.82; p.sy = 1.22;
   }
   function control(p, dt, inp) {

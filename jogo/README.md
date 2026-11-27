@@ -8,9 +8,9 @@ Abra `index.html` (funciona direto de `file://`) ou rode `python3 -m http.server
 | Ação | Teclado | Controle | Toque |
 |---|---|---|---|
 | Andar | ←/→ ou A/D | analógico | analógico (polegar esquerdo) |
-| Pular (segure = mais alto; de novo no ar = planar) | Espaço | A/✕ | Pular |
+| Pular (segure = mais alto; no ar: pulo duplo, depois planar) | Espaço | A/✕ | Pular |
 | Tabefe | J, X ou K | X/□ ou B/◯ | Bater |
-| Arrancada | Shift ou L | RB/RT ou Y | Correr |
+| Bola rolante (invulnerável, derruba bichos) | ←← ou →→ rápido, Shift ou L | RB/RT ou Y | Bola, ou toque duplo no analógico |
 | Subir no cipó / mergulhar | ↑ / ↓ | direcional | analógico |
 | Pancada do Rei (no ar) | S ou ↓ | ↓ | Pancada |
 | Pausa | Esc ou P | Start | ❚❚ |

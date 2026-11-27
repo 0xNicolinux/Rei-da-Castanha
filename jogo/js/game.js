@@ -20,10 +20,12 @@
     invuln: 0, hurtT: 0, sx: 1, sy: 1, animT: 0, jumping: false, landT: 0, dead: false, finishing: false,
     idleT: 0, atk: 0, atkCd: 0, atkBuf: 0, atkId: 0, combo: 0, lastAtkT: -9, lastBeat: -1,
     gliding: false, glideT: 0, pound: 0, poundHang: 0, chain: 0, prevJump: false, prevDown: false,
-    dash: 0, dashCd: 0, airDash: true, prevDash: false, vine: null, rope: null, swim: false, regrab: 0, swimCd: 0
+    dash: 0, dashCd: 0, airDash: true, prevDash: false, dashId: 0, airJump: true, flipT: 0, prevL: false, prevR: false, tapDir: 0, tapT: -9, vine: null, rope: null, swim: false, regrab: 0, swimCd: 0
   };
-  /* arrancada (Shift/L): curta, sem invencibilidade; uma no ar, recarrega ao pousar, agarrar cipó ou pisar num bicho */
-  const DASH = { T: 0.15, V: 640, CD: 0.32 };
+  /* bola rolante: ← ou → duas vezes rápido (ou Shift/L, botão Correr). O Rei vira bola, fica invulnerável e
+     derruba os bichos em que bater. Uma no ar; recarrega ao pousar, agarrar cipó ou pisar num bicho. */
+  const DASH = { T: 0.3, V: 560, CD: 0.42, TAP: 0.24 };
+  const DJUMP = 0.88;                                       // pulo duplo: 88% do pulo normal
   /* golpe: DUR total, janela ativa ON..OFF (segundos desde o início), alcance à frente; 3º golpe seguido é o finalizador */
   const ATK = { DUR: 0.26, ON: 0.05, OFF: 0.16, CD: 0.3, BUF: 0.14, REACH: 58, CHAIN: 0.55 };
   /* planar: aperte pular de novo no ar e segure (a cauda abre) — fôlego limitado por pulo.
@@ -179,7 +181,7 @@
     player.dead = false; player.finishing = false;
     player.idleT = 0; player.atk = 0; player.atkCd = 0; player.atkBuf = 0; player.combo = 0;
     player.gliding = false; player.glideT = GLIDE.MAX; player.pound = 0; player.poundHang = 0; player.chain = 0;
-    player.dash = 0; player.dashCd = 0; player.airDash = true; player.vine = null; player.rope = null; player.swim = false; player.regrab = 0;
+    player.dash = 0; player.dashCd = 0; player.airDash = true; player.airJump = true; player.flipT = 0; player.vine = null; player.rope = null; player.swim = false; player.regrab = 0;
   }
 
   /* ---------------------------------------------------------------- inimigos */
@@ -261,12 +263,12 @@
     let dir = (right ? 1 : 0) - (left ? 1 : 0);
     if (player.finishing) dir = 1;
     if (player.hurtT > 0) { player.hurtT -= dt; dir = 0; }
-    player.regrab -= dt; player.dashCd -= dt; player.swimCd -= dt;
+    player.regrab -= dt; player.dashCd -= dt; player.swimCd -= dt; player.flipT -= dt;
 
     // cipós e cordas (js/mechanics.js) assumem o controle enquanto o Rei está pendurado
     const inp = { dir, up: upHeld, down: downHeld, jumpPress, jumpHeld, dashPress };
     if (RC.mech && !player.finishing && player.hurtT <= 0 && RC.mech.control(player, dt, inp)) {
-      player.gliding = false; player.pound = 0; player.dash = 0; player.airDash = true; player.glideT = GLIDE.MAX; player.chain = 0;
+      player.gliding = false; player.pound = 0; player.dash = 0; player.airDash = true; player.airJump = true; player.glideT = GLIDE.MAX; player.chain = 0;
       player.coyote = 0; player.buf = 0; player.grounded = false; player.animT += dt; player.idleT = 0;
       if (player.invuln > 0) player.invuln = Math.max(0, player.invuln - dt);
       const k = 1 - Math.exp(-dt * 16); player.sx += (1 - player.sx) * k; player.sy += (1 - player.sy) * k;
@@ -277,13 +279,23 @@
     const surf = RC.mech ? RC.mech.waterAt(player.x + player.w / 2, player.y + player.h * 0.55) : null;
     const wasSwim = player.swim; player.swim = surf !== null;
     if (player.swim !== wasSwim) EV.emit(player.swim ? 'waterIn' : 'waterOut', player.x + player.w / 2, surf !== null ? surf : player.y + player.h);
-    if (player.swim) { player.gliding = false; player.pound = 0; player.airDash = true; player.glideT = GLIDE.MAX; }
+    if (player.swim) { player.gliding = false; player.pound = 0; player.airDash = true; player.airJump = true; player.glideT = GLIDE.MAX; }
 
-    // arrancada
-    if (dashPress && player.dashCd <= 0 && !player.dash && (player.grounded || player.airDash || player.swim) && !player.finishing && player.hurtT <= 0) {
+    // toque duplo em ← ou →: dispara a bola (funciona com teclado, controle, analógico de toque)
+    let rollPress = dashPress;
+    const lNow = left && !right, rNow = right && !left;
+    for (const [now, prev, d] of [[lNow, player.prevL, -1], [rNow, player.prevR, 1]]) {
+      if (now && !prev) {
+        if (player.tapDir === d && G.levelTime - player.tapT < DASH.TAP) { rollPress = true; player.tapDir = 0; } else { player.tapDir = d; player.tapT = G.levelTime; }
+      }
+    }
+    player.prevL = lNow; player.prevR = rNow;
+    // bola rolante
+    if (rollPress && player.dashCd <= 0 && !player.dash && (player.grounded || player.airDash || player.swim) && !player.finishing && player.hurtT <= 0) {
       if (dir) player.facing = dir;
-      player.dash = DASH.T * (player.swim ? 1.4 : 1); player.dashCd = DASH.CD; if (!player.grounded) player.airDash = false;
-      player.gliding = false; player.pound = 0; player.jumping = false; player.sx = 1.3; player.sy = 0.8;
+      player.dash = DASH.T * (player.swim ? 1.3 : 1); player.dashCd = DASH.CD; player.dashId++; if (!player.grounded) player.airDash = false;
+      player.gliding = false; player.pound = 0; player.jumping = false; player.sx = 1.3; player.sy = 0.8; player.flipT = 0;
+      dust(player.x + player.w / 2, player.y + player.h, 6);
       sfx('dash', 0.32); EV.emit('dash', player.facing);
     }
 
@@ -291,8 +303,8 @@
     const accel = (grounded ? PH.ACC_G : PH.ACC_A) * (player.swim ? 0.55 : 1);
     const maxV = PH.RUN * (player.finishing ? 0.7 : 1) * (player.swim ? 0.62 : 1);
     if (player.dash > 0) {
-      player.dash -= dt; player.vx = player.facing * DASH.V * (player.swim ? 0.6 : 1); player.vy = 0;
-      if (player.dash <= 0) { player.dash = 0; player.vx = player.facing * maxV; }
+      player.dash -= dt; player.vx = player.facing * DASH.V * (player.swim ? 0.6 : 1);
+      if (player.dash <= 0) { player.dash = 0; player.vx = player.facing * maxV; player.sx = 0.85; player.sy = 1.15; }
     } else if (dir) {
       // virar rápido; acima da corrida (arremesso do cipó, arrancada) o embalo cai aos poucos em vez de cortar seco
       if (Math.sign(player.vx) !== dir && player.vx !== 0) player.vx += dir * accel * 1.5 * dt;
@@ -312,6 +324,7 @@
       player.vy = nearTop ? -PH.JUMP_V * 0.98 : -265; player.buf = 0; player.swimCd = nearTop ? 0.25 : 0.2; player.jumping = false;   // salto da água nunca é cortado
       player.sx = 0.85; player.sy = 1.2; sfx(nearTop ? 'jump' : 'stroke', 0.26); EV.emit('stroke', player.x + player.w / 2, player.y + player.h / 2);
     } else if (!player.swim && player.buf > 0 && player.coyote > 0 && player.hurtT <= 0 && !player.finishing) {
+      player.groundJumpT = 0.1;                                 // este toque já foi o pulo do chão
       player.vy = -PH.JUMP_V; player.coyote = 0; player.buf = 0; player.grounded = false; player.jumping = true;
       player.sx = 0.8; player.sy = 1.25;
       dust(player.x + player.w / 2, player.y + player.h, 5);
@@ -321,22 +334,36 @@
     if (player.vy >= 0) player.jumping = false;
 
     // Pancada do Rei: baixo no ar (não logo após decolar)
+    if (jumpPress && player.dash > 0 && !player.grounded) player.dash = 0;     // pular cancela a bola no ar
     const canAct = !player.grounded && !player.swim && !player.dash && player.hurtT <= 0 && !player.finishing && !player.dead;
     if (downPress && canAct && !player.pound && player.y + player.h < surfaceBelow(player.x + player.w / 2, player.y + player.h) - 40) {
       player.pound = 1; player.poundHang = POUND.HANG; player.gliding = false; player.jumping = false;
       player.vx *= 0.2; player.vy = 0; player.sx = 0.8; player.sy = 1.2;
       sfx('swing', 0.34, 0.6);
     }
-    // planar: novo toque em pular durante a queda
-    if (canAct && !player.pound && jumpPress && player.coyote <= 0 && player.glideT > 0 && player.vy > -120) {
+    // pulo duplo: o primeiro toque no ar dá um segundo pulo (com cambalhota); o próximo abre a planada
+    let usedDJ = false;
+    player.groundJumpT = (player.groundJumpT || 0) - dt;
+    if (canAct && !player.pound && jumpPress && player.groundJumpT <= 0 && player.coyote <= 0 && player.airJump && !player.gliding) {
+      player.airJump = false; usedDJ = true; player.buf = 0;
+      player.vy = -PH.JUMP_V * DJUMP; player.jumping = true; player.flipT = 0.34; player.sx = 0.78; player.sy = 1.28;
+      sfx('jump', 0.3, 1.35); EV.emit('doubleJump', player.x + player.w / 2, player.y + player.h);
+      burst('dust', player.x + player.w / 2, player.y + player.h, 8, 150, { life: 0.4, size: 1.1 });
+      for (let i = 0; i < 4; i++) emit('leaf', player.x + player.w / 2, player.y + player.h, { vx: (Math.random() - 0.5) * 180, vy: 40 + Math.random() * 60, g: 200, life: 0.7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 10, name: 'leaf_' + (i % 3) });
+    }
+    // planar: novo toque em pular durante a queda (depois do pulo duplo)
+    if (canAct && !usedDJ && !player.airJump && !player.pound && jumpPress && player.coyote <= 0 && player.glideT > 0 && player.vy > -120) {
       player.gliding = true; player.jumping = false;
       sfx('jump', 0.16, 1.7);
       for (let i = 0; i < 5; i++) emit('leaf', player.x + player.w / 2, player.y + 10, { vx: (Math.random() - 0.5) * 160, vy: -40 - Math.random() * 80, g: 220, life: 0.8, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 9, name: 'leaf_' + (i % 3) });
     }
     if (player.gliding && (!jumpHeld || player.glideT <= 0 || player.grounded || player.hurtT > 0)) player.gliding = false;
 
-    if (player.dash > 0) {
-      player.vy = 0;
+    if (player.dash > 0 && !player.swim) {
+      // bola: no chão rola junto ao terreno; no ar quase não cai (plana na rolagem)
+      player.vy = player.grounded ? 0 : Math.min(player.vy + PH.GRAV * 0.35 * dt, 160);
+    } else if (player.dash > 0) {
+      player.vy *= Math.exp(-dt * 6);
     } else if (player.swim && player.swimCd < 0.12 || player.swim && player.vy > -400) {
       // empuxo: o Rei boia com a cabeça para fora; segurar ↓ mergulha (castanhas e segredos no fundo)
       if (downHeld) player.vy += 900 * dt;
@@ -417,7 +444,7 @@
     }
     if (player.grounded && !wasGrounded) {
       player.landT = 0.12; sfx('land', 0.2);
-      player.glideT = GLIDE.MAX; player.gliding = false; player.chain = 0; player.airDash = true;
+      player.glideT = GLIDE.MAX; player.gliding = false; player.chain = 0; player.airDash = true; player.airJump = true;
       if (player.pound) poundImpact();
     }
 
@@ -494,8 +521,17 @@
     e.stun = 0.45; e.kb = f * (fin ? 520 : 330); e.dir = -f;
   }
 
+  // bola rolante acerta: mesmo dano do tabefe, empurra e dá um quique curto no Rei
+  function rollHit(e) {
+    const f = player.facing, ex = e.x + e.w / 2, ey = e.y + e.h * 0.45;
+    e.hp -= 1; sfx('punch', 0.4, 1.2); G.hitstop = 0.06; G.shake = Math.max(G.shake, 5);
+    burst('spark', ex, ey, 10, 280, { col: [1, 0.85, 0.45], life: 0.35, size: 0.7 });
+    EV.emit('rollHit', e);
+    if (e.hp <= 0) { killEnemy(e); return; }
+    e.stun = 0.6; e.kb = f * 420; e.dir = -f;
+  }
   function hurt(fromX, heavy) {
-    if (player.invuln > 0 || player.dead || player.finishing) return;
+    if (player.invuln > 0 || player.dead || player.finishing || player.dash > 0) return;     // bola rolante: invulnerável
     G.hearts--; G.hurts++; renderHearts(); EV.emit('playerHurt');
     player.invuln = 1.7; player.hurtT = 0.38;
     player.vx = (player.x + player.w / 2 < fromX ? -1 : 1) * 250; player.vy = -380; player.grounded = false; player.jumping = false;
@@ -539,12 +575,16 @@
     for (const e of G.enemies) {
       updateEnemy(e, dt);
       if (e.dead || e.stun > 0 || player.dead) continue;
+      if (player.dash > 0 && e.hitBy !== 'r' + player.dashId && player.x - 6 < e.x + e.w && player.x + player.w + 6 > e.x && player.y < e.y + e.h && player.y + player.h > e.y) {
+        e.hitBy = 'r' + player.dashId; rollHit(e); continue;
+      }
       if (player.x < e.x + e.w && player.x + player.w > e.x && player.y < e.y + e.h && player.y + player.h > e.y) {
+        if (player.dash > 0) continue;
         const stomp = player.vy > 60 && player.y + player.h < e.y + e.h * 0.62 + 8;
         if (stomp) {
           e.hp -= player.pound ? 2 : 1;
           if (player.pound) { player.pound = 0; G.shake = Math.max(G.shake, 7); }
-          player.chain++; player.glideT = GLIDE.MAX; player.airDash = true;
+          player.chain++; player.glideT = GLIDE.MAX; player.airDash = true; player.airJump = true;
           if (player.chain >= 2) {
             toast(`Pisão em cadeia x${player.chain}`, 900); sfx('item', 0.3, 1 + player.chain * 0.12);
             for (let k = 1; k < player.chain && k < 4; k++) G.nuts.push({ x: e.x + e.w / 2 + (k - 2) * 12, y: e.y, golden: player.chain >= 4 && k === 1, taken: false, ph: k, mag: true, vy: -260 - k * 30, drop: true });
@@ -818,8 +858,9 @@
     else if (player.vine) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = -player.vine.th * 0.85; }        // pendurado, inclinado com o cipó
     else if (player.rope) { anim = 'jump'; n = 2; rate = Math.abs(player.vy) > 10 ? 9 : 0.001; ax = 43; ay = 36; }   // subindo: alterna dois quadros
     else if (player.swim) { anim = 'jump'; n = 4; rate = 6; ax = 43; ay = 36; lineRot = clamp(player.vx / 400, -0.35, 0.35) * player.facing; }
-    else if (player.dash > 0) { anim = 'run'; n = 1; rate = 1; }
+    else if (player.dash > 0) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 27; lineRot = player.facing * (DASH.T - player.dash) * 30; }   // bola girando
     else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 36; }
+    else if (player.flipT > 0 && !player.grounded) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = player.facing * (1 - player.flipT / 0.34) * Math.PI * 2; }   // cambalhota do pulo duplo
     else if (player.gliding) { anim = 'glide'; n = 4; rate = 11; ax = 42; ay = 30; }
     else if (!player.grounded) { anim = 'jump'; n = 4; rate = 15; ax = 43; ay = 36; }
     else if (Math.abs(player.vx) > 40 || player.finishing) { anim = 'run'; n = 6; rate = 8 + Math.abs(player.vx) / 28; }
