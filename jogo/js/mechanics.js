@@ -257,79 +257,142 @@
     }
   }
   const WOOD = [0.55, 0.36, 0.2, 1], WOOD_D = [0.36, 0.22, 0.12, 1], ROPE = [0.72, 0.6, 0.4, 1];
+  /* sprites modelados no Blender (js/sprites-props.js, 1 texel = 2 px). sp(): desenha com rotação em torno de (px, py) do mundo */
+  function sp(name, x, y, o) {
+    const g = A(), r = g.rects[name]; if (!r) return null;
+    o = o || {}; const S = g.S, sx = (o.flip ? -1 : 1) * S;
+    const opt = { lit: 1 };
+    if (o.rot) { opt.rot = o.rot; opt.px = o.px - x; opt.py = o.py - y; opt.noSnap = true; }
+    if (o.col) opt.col = o.col; if (o.emit) opt.emit = o.emit;
+    g.R.sprite(g.atlas.set, r, o.flip ? x + r.w * S : x, y, sx, S, opt);
+    return r;
+  }
+  const W_ = (n) => { const r = A().rects[n]; return r ? r.w * A().S : 32; };
+  const H_ = (n) => { const r = A().rects[n]; return r ? r.h * A().S : 16; };
   function drawBridges(t, cam) {
     for (const b of bridges) {
       if (!vis(b.x0 - 60, b.x1 + 60, cam)) continue;
       const W = b.x1 - b.x0;
       if (b.type === 'rope') {
-        const n = Math.max(3, Math.round(W / 18)), dip = (u) => { const near = 1 - Math.min(1, Math.abs((b.x0 + u * W) - (b.px || 0)) / (W * 0.6)); return Math.sin(u * Math.PI) * (3 + b.sag * 7 * near); };
-        // cordas de mão e postes
-        for (const x of [b.x0, b.x1]) { rect(x - 4, b.y - 34, 8, 40, WOOD_D, { lit: 0.9 }); rect(x - 5, b.y - 36, 10, 5, WOOD, { lit: 0.9 }); }
+        // tábuas de verdade, verga onde o Rei pisa; cordas de mão entre os postes
+        const pw = W_('prop_plank_1'), n = Math.max(2, Math.round(W / (pw - 2))), step = W / n;
+        const dip = (u) => { const near = 1 - Math.min(1, Math.abs((b.x0 + u * W) - (b.px || 0)) / (W * 0.6)); return Math.sin(u * Math.PI) * (3 + b.sag * 7 * near); };
         let px = b.x0, py = b.y - 30;
-        for (let i = 1; i <= n; i++) { const u = i / n, x = b.x0 + u * W, y = b.y - 30 + dip(u) * 0.8; seg(px, py, x, y, 2, ROPE); if (i < n) seg(x, y, x, b.y + dip(u), 1.5, ROPE); px = x; py = y; }
-        for (let i = 0; i < n; i++) { const u = (i + 0.5) / n, x = b.x0 + i * (W / n); rect(x + 1, b.y + dip(u) - 1, W / n - 3, 8, i % 2 ? WOOD : [0.6, 0.4, 0.22, 1], { lit: 0.8 }); }
-      } else if (b.type === 'draw') {
-        // ponte levadiça: gira em torno da ponta esquerda (de pé, -90°, até deitada)
-        const a = -Math.PI / 2 * (1 - easeOut(b.anim));
-        rect(b.x0 - 8, b.y - 70, 12, 76, WOOD_D, { lit: 0.9 });                          // torre
-        rect(b.x0, b.y - 4, W, 12, WOOD, { rot: a, px: 0, py: 4, lit: 0.8 });
-        for (let k = 1; k < 5; k++) rect(b.x0 + (W * k) / 5 - 1, b.y - 4, 2, 12, WOOD_D, { rot: a, px: -(W * k) / 5 + 1, py: 4, lit: 0.8 });
-        // corrente da torre até a ponta
-        const ex = b.x0 + Math.cos(a) * W, ey = b.y + Math.sin(a) * W;
-        seg(b.x0 - 2, b.y - 66, ex, ey, 2, [0.5, 0.5, 0.55, 1]);
-      } else if (b.type === 'log') {
-        // tronco seco: em pé na beira, tomba para a direita até virar ponte
-        const a = -Math.PI / 2 * (1 - easeIn(b.anim));
-        rect(b.x0, b.y - 10, W + 12, 22, [0.42, 0.3, 0.2, 1], { rot: a, px: 0, py: 11, lit: 0.9 });
-        rect(b.x0, b.y - 10, W + 12, 5, [0.55, 0.42, 0.28, 1], { rot: a, px: 0, py: 11, lit: 0.9 });
-        for (let k = 1; k < 6; k++) rect(b.x0 + (W * k) / 6, b.y - 10, 3, 22, [0.3, 0.2, 0.12, 1], { rot: a, px: -(W * k) / 6, py: 11, lit: 0.9 });
-        if (!b.down) {           // brilho fraco convidando o tabefe
-          const s = 0.6 + 0.1 * Math.sin(t * 4);
-          glow(b.x0 + 4, b.y - 70, s, [1, 0.8, 0.5, 0.16]);
+        for (let i = 1; i <= n; i++) { const u = i / n, x = b.x0 + u * W, y = b.y - 30 + dip(u) * 0.8; seg(px, py, x, y, 2, ROPE); px = x; py = y; }
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n, x = b.x0 + i * step, y = b.y + dip(u) - 4;
+          sp(i % 2 ? 'prop_plank_2' : 'prop_plank_1', x + (step - pw) / 2, y, { rot: (dip((i + 1) / n) - dip(i / n)) / step, px: x + step / 2, py: y + 6 });
+          if (i > 0) seg(x, b.y - 30 + dip(i / n) * 0.8, x, y + 2, 1.5, ROPE);
         }
+        for (const x of [b.x0, b.x1]) sp('prop_post', x - W_('prop_post') / 2, b.y - H_('prop_post') + 14);
+      } else if (b.type === 'draw') {
+        // ponte levadiça: tábuas com cinta de ferro giram da ponta esquerda (de pé, -90°, até deitada)
+        const a = -Math.PI / 2 * (1 - easeOut(b.anim)), dw = W_('prop_deck'), n = Math.max(1, Math.round(W / dw));
+        const tw2 = W_('prop_tower');
+        sp('prop_tower', b.x0 - tw2 + 8, b.y - H_('prop_tower') + 10);
+        for (let k = 0; k < n; k++) sp('prop_deck', b.x0 + k * (W / n), b.y - 4, { rot: a, px: b.x0, py: b.y + 2 });
+        const ex = b.x0 + Math.cos(a) * W, ey = b.y + Math.sin(a) * W;
+        seg(b.x0 - 10, b.y - H_('prop_tower') + 34, ex, ey, 2, [0.42, 0.42, 0.48, 1]);              // corrente
+      } else if (b.type === 'log') {
+        // tronco seco de Blender: em pé na beira, tomba para a direita e vira ponte
+        const a = -Math.PI / 2 * (1 - easeIn(b.anim)), mw = W_('prop_log_mid'), lh = H_('prop_log_mid'), n = Math.max(1, Math.ceil(W / mw));
+        for (let k = 0; k < n; k++) sp('prop_log_mid', b.x0 + k * mw, b.y - lh / 2 + 4, { rot: a, px: b.x0, py: b.y + 4 });
+        sp('prop_log_end', b.x0 + n * mw - 2, b.y - lh / 2 + 4, { rot: a, px: b.x0, py: b.y + 4 });
+        if (!b.down) glow(b.x0 + 6, b.y - 70, 0.6 + 0.1 * Math.sin(t * 4), [1, 0.8, 0.5, 0.16]);       // convida o tabefe
       }
     }
     for (const L of levers) {
       if (!vis(L.x - 30, L.x + 30, cam)) continue;
-      rect(L.x - 12, L.y - 10, 24, 10, [0.35, 0.33, 0.36, 1], { lit: 0.9 });
-      const a = L.on ? 0.7 : -0.7;
-      rect(L.x - 2, L.y - 40, 4, 32, WOOD_D, { rot: a, px: 2, py: 32 });
-      rect(L.x - 6, L.y - 46, 12, 10, L.on ? [0.45, 0.8, 0.35, 1] : [0.85, 0.3, 0.25, 1], { rot: a, px: 6, py: 38, lit: 0.4 });
-      if (!L.on) glow(L.x, L.y - 40, 0.55 + 0.08 * Math.sin(t * 5), [1, 0.5, 0.35, 0.22]);
+      const bw = W_('prop_lever_base'), bh = H_('prop_lever_base'), sn = L.on ? 'prop_lever_on' : 'prop_lever_off', sw = W_(sn), sh = H_(sn);
+      const k = Math.min(1, L.t * 6), a = L.on ? -0.7 + 1.4 * easeOut(k) : -0.7 + Math.sin(t * 3) * 0.05;
+      sp(sn, L.x - sw / 2, L.y - bh + 6 - sh, { rot: a, px: L.x, py: L.y - bh + 6 });
+      sp('prop_lever_base', L.x - bw / 2, L.y - bh);
+      if (!L.on) glow(L.x, L.y - bh - sh + 8, 0.55 + 0.08 * Math.sin(t * 5), [1, 0.45, 0.3, 0.22]);
     }
     for (const r of rafts) {
-      const x = r.plat.x, y = r.plat.y;
+      const x = r.plat.x, y = r.plat.y, rw = W_('prop_raft');
       if (!vis(x, x + r.w, cam)) continue;
-      for (let k = 0; k < r.w / 14; k++) rect(x + k * 14, y - 2, 12, 14, k % 2 ? WOOD : [0.6, 0.42, 0.24, 1], { lit: 0.8 });
-      rect(x - 2, y + 3, r.w + 4, 3, ROPE);
+      const n = Math.max(1, Math.round(r.w / rw));
+      for (let k = 0; k < n; k++) sp('prop_raft', x + k * (r.w / n), y - 4, { rot: Math.sin(tw * 2 + r.x0) * 0.02, px: x + r.w / 2, py: y });
     }
   }
+  /* água pintada por código, com paleta por clima: [superfície, meio, fundo, crista] */
+  const WPAL = [
+    [[0.32, 0.62, 0.62], [0.13, 0.36, 0.44], [0.05, 0.14, 0.22], [0.86, 0.98, 0.92]],   // amanhecer
+    [[0.24, 0.56, 0.46], [0.09, 0.32, 0.32], [0.03, 0.13, 0.15], [0.78, 1.0, 0.86]],    // mata fechada
+    [[0.62, 0.5, 0.42], [0.3, 0.26, 0.34], [0.1, 0.08, 0.17], [1.0, 0.86, 0.66]],       // entardecer
+    [[0.2, 0.36, 0.6], [0.08, 0.16, 0.36], [0.02, 0.05, 0.16], [0.7, 0.86, 1.0]],       // hora azul
+    [[0.22, 0.28, 0.52], [0.1, 0.1, 0.3], [0.03, 0.02, 0.12], [1.0, 0.88, 0.62]]        // festival
+  ];
+  const mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+  const waveY = (w, x, t) => w.y + Math.sin(x * 0.045 + t * 2.1 + w.ph) * 1.8 + Math.sin(x * 0.11 - t * 3.3) * 0.9;
   function drawWater(t, cam) {
+    const pal = WPAL[(A().G.lv && A().G.lv.mood) || 0];
     for (const w of water) {
       if (!vis(w.x0, w.x1, cam)) continue;
       const x0 = Math.max(w.x0, cam - 40), x1 = Math.min(w.x1, cam + 1000), H = 540 - w.y;
-      rect(x0, w.y, x1 - x0, H, [0.12, 0.32, 0.42, 0.55], { lit: 0.35 });                 // corpo translúcido
-      rect(x0, w.y + H * 0.45, x1 - x0, H * 0.55, [0.04, 0.12, 0.2, 0.35], { lit: 0 });  // fundo mais escuro
-      // superfície ondulada: faixas curtas que sobem e descem
-      for (let x = x0 - (x0 % 12); x < x1; x += 12) {
-        const y = w.y + Math.sin(x * 0.045 + t * 2.4 + w.ph) * 1.6;
-        rect(x, y - 1, 12, 3, [0.7, 0.92, 1, 0.55], { lit: 0 });
+      // corpo: faixas de profundidade (translúcido em cima, quase opaco no fundo)
+      const bands = 9;
+      for (let k = 0; k < bands; k++) {
+        const u = k / (bands - 1), c = u < 0.5 ? mix(pal[0], pal[1], u * 2) : mix(pal[1], pal[2], (u - 0.5) * 2);
+        const y = w.y + 3 + (H - 3) * (k / bands), h = (H - 3) / bands + 1;
+        rect(x0, y, x1 - x0, h, [c[0], c[1], c[2], 0.5 + 0.38 * u], { lit: 0.25 });
       }
-      // brilhos que correm sob a superfície
-      for (let k = 0; k < 6; k++) {
-        const x = w.x0 + (((k * 173 + t * 22 * (k % 2 ? 1 : -1)) % (w.x1 - w.x0)) + (w.x1 - w.x0)) % (w.x1 - w.x0);
-        if (x < x0 || x > x1) continue;
-        rect(x, w.y + 10 + (k % 3) * 18, 18 + (k % 2) * 10, 2, [0.6, 0.9, 1, 0.18], { lit: 0 });
+      // refração: faixas claras e onduladas que correm devagar sob a superfície
+      for (let k = 0; k < 5; k++) {
+        const yy = w.y + 12 + k * 13 + Math.sin(t * 0.9 + k) * 2;
+        for (let x = x0 - (x0 % 8); x < x1; x += 8) {
+          const s0 = Math.sin(x * 0.03 + t * (0.8 + k * 0.17) + k * 1.7);
+          if (s0 > 0.55) rect(x, yy + Math.sin(x * 0.07 + t * 2 + k) * 2, 8, 2, [pal[3][0], pal[3][1], pal[3][2], (s0 - 0.55) * 0.35 * (1 - k / 6)], { lit: 0 });
+        }
+      }
+      // superfície: crista clara em cima de uma linha mais escura (dá espessura), em tiras de 4 px
+      for (let x = x0 - (x0 % 4); x < x1; x += 4) {
+        const y = waveY(w, x, t);
+        rect(x, y + 2, 4, 3, [pal[1][0] * 0.7, pal[1][1] * 0.7, pal[1][2] * 0.8, 0.55], { lit: 0 });
+        rect(x, y - 1, 4, 2, [pal[3][0], pal[3][1], pal[3][2], 0.85], { lit: 0 });
+      }
+      // brilhos que piscam na superfície
+      for (let k = 0; k < 14; k++) {
+        const x = w.x0 + ((k * 97.3 + Math.floor(t * 0.7 + k) * 41) % (w.x1 - w.x0));
+        const tw_ = Math.sin(t * 4 + k * 2.3); if (tw_ < 0.4 || x < x0 || x > x1) continue;
+        rect(x, waveY(w, x, t) + 4 + (k % 3) * 3, 6 + (k % 2) * 4, 1.5, [1, 1, 1, (tw_ - 0.4) * 0.9], { lit: 0 });
+      }
+      // espuma nas margens
+      for (const ex of [w.x0, w.x1]) {
+        if (ex < cam - 40 || ex > cam + 1000) continue;
+        for (let k = 0; k < 4; k++) {
+          const ph = t * 2.2 + k * 1.6, dx = (ex === w.x0 ? 1 : -1) * (4 + k * 6 + Math.sin(ph) * 3);
+          rect(ex + dx - 3, waveY(w, ex + dx, t) - 2 - Math.abs(Math.sin(ph)) * 2, 6, 3, [1, 1, 1, 0.55 - k * 0.1], { lit: 0 });
+        }
       }
     }
-    for (const b of bubbles) rect(b.x - 2, b.y - 2, 4, 4, [0.85, 0.95, 1, 0.7], { lit: 0 });
-    for (const r of ripples) { const k = r.t / 0.9, w0 = (r.big ? 60 : 24) * k + 6; rect(r.x - w0, r.y - 1, w0 * 2, 2, [0.85, 0.97, 1, (1 - k) * 0.6], { lit: 0 }); }
+    for (const b of bubbles) { rect(b.x - 2, b.y - 2, 4, 4, [0.85, 0.95, 1, 0.75], { lit: 0 }); rect(b.x - 1, b.y - 1, 1.5, 1.5, [1, 1, 1, 0.9], { lit: 0 }); }
+    for (const r of ripples) { const k = r.t / 0.9, w0 = (r.big ? 60 : 24) * k + 6; rect(r.x - w0, r.y - 1, w0 * 2, 2, [0.9, 0.98, 1, (1 - k) * 0.7], { lit: 0 }); rect(r.x - w0 * 0.6, r.y + 3, w0 * 1.2, 1.5, [0.9, 0.98, 1, (1 - k) * 0.4], { lit: 0 }); }
   }
   const easeOut = (u) => 1 - (1 - u) * (1 - u), easeIn = (u) => u * u;
   EV.on('drawBehind', (t, cam) => { if (!A().G.lv || !A().rects) return; drawBridges(t, cam); drawVines(t, cam); });
   EV.on('drawFront', (t, cam) => { if (!A().G.lv || !A().rects) return; drawWater(t, cam); });
   EV.on('drawAdd', (t, cam) => {
-    for (const w of water) if (vis(w.x0, w.x1, cam)) for (let x = Math.ceil((cam - 40) / 90) * 90; x < cam + 1000; x += 90) if (x > w.x0 + 20 && x < w.x1 - 20) glow(x + Math.sin(t + x) * 10, w.y + 2, 0.5, [0.6, 0.9, 1, 0.08 + 0.05 * Math.sin(t * 2 + x)]);
+    const g = A(); if (!g.G.lv || !g.rects) return;
+    const pal = WPAL[g.G.lv.mood || 0];
+    for (const w of water) {
+      if (!vis(w.x0, w.x1, cam)) continue;
+      const H = 540 - w.y, r = g.rects.glow;
+      // raios de luz entrando na água
+      for (let k = 0; k < 4; k++) {
+        const x = w.x0 + ((k * 211 + t * 9) % Math.max(1, w.x1 - w.x0)); if (x < cam - 60 || x > cam + 1020) continue;
+        const a = 0.05 + 0.03 * Math.sin(t * 0.8 + k * 2);
+        g.R.sprite(g.atlas.set, r, x - 20, w.y, 40 / r.w, H / r.h, { col: [pal[3][0], pal[3][1], pal[3][2], a], lit: 0, noSnap: true, shear: 18 });
+      }
+      // cáusticas dançando no fundo
+      for (let x = Math.ceil((cam - 40) / 46) * 46; x < cam + 1000; x += 46) {
+        if (x < w.x0 + 8 || x > w.x1 - 8) continue;
+        const fy = g.groundTop(Math.floor(x / g.T)); if (fy > 1e8) continue;
+        const k = Math.sin(x * 0.13 + t * 2.6) * Math.sin(x * 0.07 - t * 1.7);
+        if (k > 0.1) glow(x + Math.sin(t * 1.3 + x) * 8, fy - 2, 0.35 + k * 0.3, [pal[3][0], pal[3][1], pal[3][2], k * 0.22]);
+      }
+    }
   });
 
   RC.mech = { control, waterAt, solidAt, bridgeAt, levers: () => levers, bridges: () => bridges, vines: () => vines, ropes: () => ropes, water: () => water };

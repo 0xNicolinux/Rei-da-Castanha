@@ -484,7 +484,9 @@
       if (r.state !== 'away' && vis(r.x)) {
         const fleeing = r.state === 'flee' || r.state === 'gone', hop = fleeing ? Math.abs(Math.sin(t * 14)) * 7 : Math.sin(t * 5) * 1;
         boss(r.x, r.y - hop, t, 1, 0.5, fleeing ? 'walk' : 'idle', [0.78, 0.72, 0.85]);
-        const sr = g.rects.item_saco_1; if (sr) g.spr('item_saco_' + (1 + (Math.floor(t * 4) % 2)), r.x - 36 - sr.w * 0.5, r.y - hop - 70, g.S * 0.75, g.S * 0.75, { emit: 0.08 });
+        // o saco vai abraçado na frente da barriga, nas patas (o urso olha para a direita), balançando com o passo
+        const sr = g.rects.item_saco_1, sw = fleeing ? Math.sin(t * 14) * 2 : Math.sin(t * 2.4) * 1;
+        if (sr) g.spr('item_saco_' + (1 + (Math.floor(t * 4) % 2)), r.x + 14 - sr.w * 0.6 + sw, r.y - hop - 64 + Math.abs(sw), g.S * 0.6, g.S * 0.6, { emit: 0.08 });
       }
       if (M.flyer && !M.flyer.got && vis(M.flyer.x)) drawItem('item_panfleto', M.flyer.x, M.flyer.y, t, 1.1);
     }
