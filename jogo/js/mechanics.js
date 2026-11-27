@@ -104,7 +104,7 @@
       if (s.th > 1.45) { s.th = 1.45; s.om = Math.min(0, s.om) * 0.3; }
       if (s.th < -1.45) { s.th = -1.45; s.om = Math.max(0, s.om) * 0.3; }
       if (inp.up) s.r = Math.max(60, s.r - 150 * dt);
-      if (inp.down) s.r = Math.min(v.len, s.r + 150 * dt);
+
       v.th = s.th; v.om = s.om;
       const cx = v.x + Math.sin(s.th) * s.r, cy = v.y + Math.cos(s.th) * s.r;
       p.x = cx - p.w / 2; p.y = cy - p.h * 0.35;
@@ -117,6 +117,7 @@
         g.sfx('jump', 0.3, 1.15);
         g.burst('leaf', cx, cy - 10, 5, 160, { name: 'leaf_0', g: 260, vr: 8, life: 0.9 });
       } else if (inp.dashPress) release(p, p.facing * 300, 60);
+      else if (inp.down) { release(p, tvx * 0.6, Math.max(tvy, 0) + 40); p.jumping = false; }          // ↓ solta o cipó e cai
       // bateu no chão ou numa parede: solta
       const top = g.groundTop(Math.floor((p.x + p.w / 2) / g.T));
       if (p.y + p.h > top) { p.y = top - p.h; release(p, p.vx * 0.5, 0); }

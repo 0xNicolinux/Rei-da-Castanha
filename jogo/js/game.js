@@ -258,10 +258,12 @@
     const upHeld = keys.has('ArrowUp') || keys.has('KeyW') || keys.has('PadUp');
     const onLine = !!(player.vine || player.rope);           // no cipó, ↑/W sobe em vez de pular
     const jumpHeld = keys.has('Space') || keys.has('PadJump') || (!onLine && (keys.has('ArrowUp') || keys.has('KeyW')));
-    const downHeld = keys.has('ArrowDown') || keys.has('KeyS') || keys.has('PadDown');
+    // ↓ desce (plataforma, cipó, água); S é a Pancada. No controle, ↓ faz as duas coisas conforme o lugar.
+    const downHeld = keys.has('ArrowDown') || keys.has('PadDown');
+    const slamHeld = keys.has('KeyS') || (keys.has('PadDown') && !player.grounded);
     const dashHeld = keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyL') || keys.has('PadDash');
-    const jumpPress = jumpHeld && !player.prevJump, downPress = downHeld && !player.prevDown, dashPress = dashHeld && !player.prevDash;
-    player.prevJump = jumpHeld; player.prevDown = downHeld; player.prevDash = dashHeld;
+    const jumpPress = jumpHeld && !player.prevJump, downPress = downHeld && !player.prevDown, dashPress = dashHeld && !player.prevDash, slamPress = slamHeld && !player.prevSlam;
+    player.prevJump = jumpHeld; player.prevDown = downHeld; player.prevDash = dashHeld; player.prevSlam = slamHeld; player.dropT = (player.dropT || 0) - dt;
     let dir = (right ? 1 : 0) - (left ? 1 : 0);
     if (player.finishing) dir = 1;
     if (player.hurtT > 0) { player.hurtT -= dt; dir = 0; }
@@ -284,7 +286,7 @@
     if (player.swim) { player.gliding = false; player.pound = 0; player.airDash = true; player.airJump = true; player.glideT = GLIDE.MAX; }
 
     // toque duplo em ← ou →: dispara a bola (funciona com teclado, controle, analógico de toque)
-    let rollPress = dashPress;
+    let rollPress = dashPress || player.rollReq; player.rollReq = false;
     const lNow = left && !right, rNow = right && !left;
     for (const [now, prev, d] of [[lNow, player.prevL, -1], [rNow, player.prevR, 1]]) {
       if (now && !prev) {
@@ -310,7 +312,6 @@
       const top = DASH.V * (player.swim ? 0.6 : 1), el = player.dashDur - player.dash;
       let v = player.dash < DASH.OUT ? lerp(maxV, top, smooth(player.dash / DASH.OUT)) : lerp(player.dashV0, top, smooth(el / DASH.IN));
       player.vx = player.facing * v;
-      if (el > 0.05 && player.dash > 0.06) player.spin += player.facing * v * dt / 15;          // gira na proporção da velocidade
       if (player.dash <= 0) { player.dash = 0; player.vx = player.facing * maxV; player.sx = 0.95; player.sy = 1.05; }
     } else if (dir) {
       // virar rápido; acima da corrida (arremesso do cipó, arrancada) o embalo cai aos poucos em vez de cortar seco
@@ -343,7 +344,13 @@
     // Pancada do Rei: baixo no ar (não logo após decolar)
     if (jumpPress && player.dash > 0 && !player.grounded) player.dash = 0;     // pular cancela a bola no ar
     const canAct = !player.grounded && !player.swim && !player.dash && player.hurtT <= 0 && !player.finishing && !player.dead;
-    if (downPress && canAct && !player.pound && player.y + player.h < surfaceBelow(player.x + player.w / 2, player.y + player.h) - 40) {
+    // ↓ em cima de um galho ou jangada: atravessa para baixo (pontes ficam firmes, para ninguém cair num buraco sem querer)
+    if (downPress && player.grounded && !player.dash && player.hurtT <= 0) {
+      const feet = player.y + player.h;
+      const on = lv.platforms.find((p) => !p.off && p.kind !== 'bridge' && player.x + player.w > p.x + 3 && player.x < p.x + p.w - 3 && Math.abs(p.y - feet) < 3);
+      if (on) { player.dropT = 0.22; player.grounded = false; player.y += 3; player.vy = 60; player.coyote = 0; player.sx = 0.9; player.sy = 1.1; }
+    }
+    if (slamPress && canAct && !player.pound && player.y + player.h < surfaceBelow(player.x + player.w / 2, player.y + player.h) - 40) {
       player.pound = 1; player.poundHang = POUND.HANG; player.gliding = false; player.jumping = false;
       player.vx *= 0.2; player.vy = 0; player.sx = 0.8; player.sy = 1.2;
       sfx('swing', 0.34, 0.6);
@@ -373,10 +380,10 @@
       player.vy *= Math.exp(-dt * 6);
     } else if (player.swim && player.swimCd < 0.12 || player.swim && player.vy > -400) {
       // empuxo: o Rei boia com a cabeça para fora; segurar ↓ mergulha (castanhas e segredos no fundo)
-      if (downHeld) player.vy += 900 * dt;
+      if (downHeld || keys.has('KeyS')) player.vy += 900 * dt;
       else player.vy += (player.y > surf - 12 ? -560 : 380) * dt;
       player.vy *= Math.exp(-dt * 3.2);
-      player.vy = clamp(player.vy, -300, downHeld ? 240 : 160);
+      player.vy = clamp(player.vy, -300, downHeld || keys.has('KeyS') ? 240 : 160);
     } else if (player.pound) {
       if (player.poundHang > 0) { player.poundHang -= dt; player.vy = 0; player.vx *= Math.exp(-dt * 20); }
       else player.vy = POUND.V;
@@ -435,6 +442,7 @@
       let land = null;
       if (bottom >= top && prevBottom <= top + 7) land = top;
       for (const p of lv.platforms) {
+        if (player.dropT > 0 && p.kind !== 'bridge') continue;          // descendo pelo galho
         if (!p.off && player.x + player.w > p.x + 3 && player.x < p.x + p.w - 3 && prevBottom <= p.y + 5 && bottom >= p.y && (land === null || p.y < land)) {
           land = p.y;
           if (p.crumble && !(p.cT > 0)) { p.cT = 0.5; sfx('land', 0.15, 0.6); burst('dust', player.x + player.w / 2, p.y, 4, 70, { col: [0.5, 0.35, 0.2], life: 0.5 }); }
@@ -709,7 +717,7 @@
     G.fade = 0; G.fadeTarget = 1; G.state = 'playing'; syncMusic();
     EV.emit('stageStart', stage);
     setTimeout(() => show(ui.card, false), 2300);
-    if (stage === 0) setTimeout(() => { if (G.state === 'playing') toast(matchMedia('(pointer:coarse)').matches ? 'Bater: dá um tabefe nos bichos' : 'J ou X: dá um tabefe nos bichos', 2600); }, 2600);
+    if (stage === 0) setTimeout(() => { if (G.state === 'playing') toast(matchMedia('(pointer:coarse)').matches ? 'Bater: dá um tabefe nos bichos' : 'J: dá um tabefe nos bichos', 2600); }, 2600);
   }
   function togglePause() {
     if (G.state === 'playing') { G.state = 'paused'; show(ui.pause, true); syncMusic(); }
@@ -866,9 +874,9 @@
     else if (player.rope) { anim = 'jump'; n = 2; rate = Math.abs(player.vy) > 10 ? 9 : 0.001; ax = 43; ay = 36; }   // subindo: alterna dois quadros
     else if (player.swim) { anim = 'jump'; n = 4; rate = 6; ax = 43; ay = 36; lineRot = clamp(player.vx / 400, -0.35, 0.35) * player.facing; }
     else if (player.dash > 0) {
-      const el = player.dashDur - player.dash;
-      if (el < 0.05 || player.dash < 0.06) { anim = 'crouch'; n = 1; rate = 1; lineRot = 0; }   // encolhe para virar bola / desenrola
-      else { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 27; lineRot = player.spin; }                                   // bola girando
+      // mesma pose da cambalhota do pulo duplo: o Rei rola uma volta inteira e termina de pé
+      const u = (player.dashDur - player.dash) / player.dashDur;
+      anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = player.facing * Math.PI * 2 * u;
     }
     else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 36; }
     else if (player.flipT > 0 && !player.grounded) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = player.facing * (1 - player.flipT / 0.34) * Math.PI * 2; }   // cambalhota do pulo duplo
@@ -910,10 +918,27 @@
     // rastro de vultos na arrancada e no arremesso do cipó (lê como velocidade, à la Silksong)
     const fast = player.dash > 0 || (!player.grounded && Math.abs(player.vx) > PH.RUN * 1.25);
     G.ghostT = (G.ghostT || 0) - 1 / 60;
-    if (fast && G.ghostT <= 0 && G.state === 'playing') { G.ghostT = 0.05; (G.ghosts = G.ghosts || []).push({ r: r0, left, top, sx: f * S * sx, sy: S * sy, a: player.dash > 0 ? 0.3 * smooth(player.dash / DASH.OUT + 0.2) : 0.3, rot: lineRot }); }
+    if (fast && G.ghostT <= 0 && G.state === 'playing') { G.ghostT = 0.05; (G.ghosts = G.ghosts || []).push({ r: r0, left, top, sx: f * S * sx, sy: S * sy, a: player.dash > 0 ? 0.22 * smooth(player.dash / DASH.OUT + 0.2) : 0.3, rot: lineRot }); }
     if (G.ghosts) for (let i = G.ghosts.length - 1; i >= 0; i--) {
       const gh = G.ghosts[i]; gh.a -= 1 / 60 * 1.9; if (gh.a <= 0) { G.ghosts.splice(i, 1); continue; }
       R.sprite(set, gh.r, gh.left, gh.top, gh.sx, gh.sy, { col: [0.55, 0.85, 1.4, gh.a * 0.7], lit: 0, emit: 0.6, rot: gh.rot, px: (cx - gh.left), py: (gh.top < top ? top - gh.top : 0) + ay * S * sy });
+    }
+    // tracinhos de velocidade (estilo desenho animado): riscos finos que nascem atrás do Rei e esticam/somem
+    G.lines = G.lines || [];
+    const zoom = player.dash > 0 ? 1 : (!player.grounded && Math.abs(player.vx) > PH.RUN * 1.3 ? 0.5 : 0);
+    if (zoom && G.state === 'playing') for (let k = 0; k < (zoom >= 1 ? 2 : 1); k++) if (Math.random() < zoom * 0.9) {
+      const dirx = Math.sign(player.vx) || f;
+      G.lines.push({ x: cx - dirx * (8 + Math.random() * 16), y: player.y - 4 + Math.random() * (player.h + 8), dir: dirx, len: 0, max: 50 + Math.random() * 70, t: 0, w: Math.random() < 0.35 ? 3 : 2 });
+    }
+    for (let i = G.lines.length - 1; i >= 0; i--) {
+      const L = G.lines[i]; L.t += 1 / 60; if (L.t > 0.22) { G.lines.splice(i, 1); continue; }
+      const k = L.t / 0.22, len = L.max * Math.min(1, k * 2.4), a = (1 - k * k) * 0.95;
+      const x0 = L.dir > 0 ? L.x - len : L.x;
+      R.sprite(set, rc.dot, x0, L.y - L.w / 2, len / rc.dot.w, L.w / rc.dot.h, { col: [1, 0.97, 0.88, a], lit: 0, noSnap: true });
+      R.sprite(set, rc.dot, L.dir > 0 ? x0 - len * 0.35 : x0 + len, L.y - 0.5, (len * 0.35) / rc.dot.w, 1 / rc.dot.h, { col: [1, 0.97, 0.88, a * 0.5], lit: 0, noSnap: true });   // ponta afinando
+    }
+    if (player.dash > 0 && player.dashDur - player.dash < 1 / 60 + 0.001 && G.state === 'playing') {   // arranque: leque de riscos curtos atrás
+      for (let k = 0; k < 5; k++) G.lines.push({ x: cx - f * 18, y: player.y + 6 + k * (player.h - 10) / 4, dir: f, len: 0, max: 50 + k % 2 * 30, t: 0, w: 3 });
     }
     const spOpt = { col: [1, 1, 1, flicker], emit: 0.05 };
     if (lineRot) { spOpt.rot = lineRot; spOpt.px = cx - left; spOpt.py = cyAnchor - top; }
@@ -1140,8 +1165,9 @@
   }
 
   /* ---------------------------------------------------------------- entrada */
+  const kbTap = { d: 0, t: -9 };
   window.addEventListener('keydown', (e) => {
-    const handled = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyW', 'Escape', 'KeyP', 'Enter', 'KeyJ', 'KeyX', 'KeyK', 'KeyS', 'ShiftLeft', 'ShiftRight', 'KeyL'];
+    const handled = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyW', 'Escape', 'KeyP', 'Enter', 'KeyJ', 'KeyS', 'ShiftLeft', 'ShiftRight', 'KeyL'];
     const t = e.target, onField = !!t && /INPUT|TEXTAREA/.test(t.tagName), onButton = !!t && t.tagName === 'BUTTON';
     if (handled.includes(e.code) && !(onField && e.code !== 'Escape')) e.preventDefault();
     if (e.code === 'Escape' || e.code === 'KeyP') { togglePause(); return; }
@@ -1155,7 +1181,13 @@
       if (step && !(onField && (e.code === 'ArrowLeft' || e.code === 'ArrowRight'))) { moveFocus(step); return; }
     }
     if (!e.repeat && (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW')) { player.buf = PH.BUFFER; }
-    if (!e.repeat && (e.code === 'KeyJ' || e.code === 'KeyX' || e.code === 'KeyK') && G.state === 'playing') player.atkBuf = ATK.BUF;
+    if (!e.repeat && e.code === 'KeyJ' && G.state === 'playing') player.atkBuf = ATK.BUF;          // um só botão de tabefe
+    // toque duplo no teclado direto no evento: toques rápidos demais para caber entre dois quadros também valem
+    const tapD = { ArrowLeft: -1, KeyA: -1, ArrowRight: 1, KeyD: 1 }[e.code];
+    if (tapD && !e.repeat && G.state === 'playing') {
+      const now = performance.now() / 1000;
+      if (kbTap.d === tapD && now - kbTap.t < DASH.TAP) { player.rollReq = true; kbTap.d = 0; player.tapDir = 0; } else { kbTap.d = tapD; kbTap.t = now; }
+    }
     keys.add(e.code);
   });
   window.addEventListener('keyup', (e) => keys.delete(e.code));
@@ -1196,7 +1228,7 @@
     const set = (k, v) => (v && play ? keys.add(k) : keys.delete(k));
     set('PadLeft', now.left); set('PadRight', now.right); set('PadJump', now.a); set('PadDown', btn(13) || ay > 0.6); set('PadUp', btn(12) || ay < -0.6); set('PadDash', now.dash);
     if (play && hit('a')) player.buf = PH.BUFFER;
-    if (play && (hit('x') || hit('b'))) player.atkBuf = ATK.BUF;
+    if (play && hit('x')) player.atkBuf = ATK.BUF;
     pad.prev = now;
   }
   window.addEventListener('gamepadconnected', () => toast('Controle conectado', 1400));
