@@ -20,11 +20,13 @@
     invuln: 0, hurtT: 0, sx: 1, sy: 1, animT: 0, jumping: false, landT: 0, dead: false, finishing: false,
     idleT: 0, atk: 0, atkCd: 0, atkBuf: 0, atkId: 0, combo: 0, lastAtkT: -9, lastBeat: -1,
     gliding: false, glideT: 0, pound: 0, poundHang: 0, chain: 0, prevJump: false, prevDown: false,
-    dash: 0, dashCd: 0, airDash: true, prevDash: false, dashId: 0, airJump: true, flipT: 0, prevL: false, prevR: false, tapDir: 0, tapT: -9, vine: null, rope: null, swim: false, regrab: 0, swimCd: 0
+    dash: 0, dashDur: 0.4, dashV0: 0, spin: 0, dashCd: 0, airDash: true, prevDash: false, dashId: 0, airJump: true, flipT: 0, prevL: false, prevR: false, tapDir: 0, tapT: -9, vine: null, rope: null, swim: false, regrab: 0, swimCd: 0
   };
   /* bola rolante: ← ou → duas vezes rápido (ou Shift/L, botão Correr). O Rei vira bola, fica invulnerável e
      derruba os bichos em que bater. Uma no ar; recarrega ao pousar, agarrar cipó ou pisar num bicho. */
-  const DASH = { T: 0.3, V: 560, CD: 0.42, TAP: 0.24 };
+  // curva de velocidade: entra em IN s (encolhendo), sustenta, e nos últimos OUT s desacelera até a corrida
+  const DASH = { T: 0.4, V: 540, CD: 0.45, TAP: 0.24, IN: 0.08, OUT: 0.16 };
+  const smooth = (u) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
   const DJUMP = 0.88;                                       // pulo duplo: 88% do pulo normal
   /* golpe: DUR total, janela ativa ON..OFF (segundos desde o início), alcance à frente; 3º golpe seguido é o finalizador */
   const ATK = { DUR: 0.26, ON: 0.05, OFF: 0.16, CD: 0.3, BUF: 0.14, REACH: 58, CHAIN: 0.55 };
@@ -293,8 +295,9 @@
     // bola rolante
     if (rollPress && player.dashCd <= 0 && !player.dash && (player.grounded || player.airDash || player.swim) && !player.finishing && player.hurtT <= 0) {
       if (dir) player.facing = dir;
-      player.dash = DASH.T * (player.swim ? 1.3 : 1); player.dashCd = DASH.CD; player.dashId++; if (!player.grounded) player.airDash = false;
-      player.gliding = false; player.pound = 0; player.jumping = false; player.sx = 1.3; player.sy = 0.8; player.flipT = 0;
+      player.dash = player.dashDur = DASH.T * (player.swim ? 1.3 : 1); player.dashCd = DASH.CD; player.dashId++; if (!player.grounded) player.airDash = false;
+      player.dashV0 = Math.max(0, player.vx * player.facing);
+      player.gliding = false; player.pound = 0; player.jumping = false; player.sx = 1.12; player.sy = 0.9; player.flipT = 0;
       dust(player.x + player.w / 2, player.y + player.h, 6);
       sfx('dash', 0.32); EV.emit('dash', player.facing);
     }
@@ -303,8 +306,12 @@
     const accel = (grounded ? PH.ACC_G : PH.ACC_A) * (player.swim ? 0.55 : 1);
     const maxV = PH.RUN * (player.finishing ? 0.7 : 1) * (player.swim ? 0.62 : 1);
     if (player.dash > 0) {
-      player.dash -= dt; player.vx = player.facing * DASH.V * (player.swim ? 0.6 : 1);
-      if (player.dash <= 0) { player.dash = 0; player.vx = player.facing * maxV; player.sx = 0.85; player.sy = 1.15; }
+      player.dash -= dt;
+      const top = DASH.V * (player.swim ? 0.6 : 1), el = player.dashDur - player.dash;
+      let v = player.dash < DASH.OUT ? lerp(maxV, top, smooth(player.dash / DASH.OUT)) : lerp(player.dashV0, top, smooth(el / DASH.IN));
+      player.vx = player.facing * v;
+      if (el > 0.05 && player.dash > 0.06) player.spin += player.facing * v * dt / 15;          // gira na proporção da velocidade
+      if (player.dash <= 0) { player.dash = 0; player.vx = player.facing * maxV; player.sx = 0.95; player.sy = 1.05; }
     } else if (dir) {
       // virar rápido; acima da corrida (arremesso do cipó, arrancada) o embalo cai aos poucos em vez de cortar seco
       if (Math.sign(player.vx) !== dir && player.vx !== 0) player.vx += dir * accel * 1.5 * dt;
@@ -858,7 +865,11 @@
     else if (player.vine) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = -player.vine.th * 0.85; }        // pendurado, inclinado com o cipó
     else if (player.rope) { anim = 'jump'; n = 2; rate = Math.abs(player.vy) > 10 ? 9 : 0.001; ax = 43; ay = 36; }   // subindo: alterna dois quadros
     else if (player.swim) { anim = 'jump'; n = 4; rate = 6; ax = 43; ay = 36; lineRot = clamp(player.vx / 400, -0.35, 0.35) * player.facing; }
-    else if (player.dash > 0) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 27; lineRot = player.facing * (DASH.T - player.dash) * 30; }   // bola girando
+    else if (player.dash > 0) {
+      const el = player.dashDur - player.dash;
+      if (el < 0.05 || player.dash < 0.06) { anim = 'crouch'; n = 1; rate = 1; lineRot = 0; }   // encolhe para virar bola / desenrola
+      else { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 27; lineRot = player.spin; }                                   // bola girando
+    }
     else if (player.pound) { anim = 'pound'; n = 1; rate = 1; ax = 43; ay = 36; }
     else if (player.flipT > 0 && !player.grounded) { anim = 'jump'; n = 1; rate = 1; ax = 43; ay = 36; lineRot = player.facing * (1 - player.flipT / 0.34) * Math.PI * 2; }   // cambalhota do pulo duplo
     else if (player.gliding) { anim = 'glide'; n = 4; rate = 11; ax = 42; ay = 30; }
@@ -899,9 +910,9 @@
     // rastro de vultos na arrancada e no arremesso do cipó (lê como velocidade, à la Silksong)
     const fast = player.dash > 0 || (!player.grounded && Math.abs(player.vx) > PH.RUN * 1.25);
     G.ghostT = (G.ghostT || 0) - 1 / 60;
-    if (fast && G.ghostT <= 0 && G.state === 'playing') { G.ghostT = 0.035; (G.ghosts = G.ghosts || []).push({ r: r0, left, top, sx: f * S * sx, sy: S * sy, a: 0.5, rot: lineRot }); }
+    if (fast && G.ghostT <= 0 && G.state === 'playing') { G.ghostT = 0.05; (G.ghosts = G.ghosts || []).push({ r: r0, left, top, sx: f * S * sx, sy: S * sy, a: player.dash > 0 ? 0.3 * smooth(player.dash / DASH.OUT + 0.2) : 0.3, rot: lineRot }); }
     if (G.ghosts) for (let i = G.ghosts.length - 1; i >= 0; i--) {
-      const gh = G.ghosts[i]; gh.a -= 1 / 60 * 2.6; if (gh.a <= 0) { G.ghosts.splice(i, 1); continue; }
+      const gh = G.ghosts[i]; gh.a -= 1 / 60 * 1.9; if (gh.a <= 0) { G.ghosts.splice(i, 1); continue; }
       R.sprite(set, gh.r, gh.left, gh.top, gh.sx, gh.sy, { col: [0.55, 0.85, 1.4, gh.a * 0.7], lit: 0, emit: 0.6, rot: gh.rot, px: (cx - gh.left), py: (gh.top < top ? top - gh.top : 0) + ay * S * sy });
     }
     const spOpt = { col: [1, 1, 1, flicker], emit: 0.05 };
